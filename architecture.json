@@ -1,0 +1,116 @@
+{
+  "$schema_note": "Este arquivo é a fonte da verdade estrutural do projeto. Qualquer agente de IA (Claude Code ou outro) DEVE ler este arquivo antes de criar, implementar ou refatorar qualquer parte do sistema. Regras aqui descritas não podem ser alteradas sem confirmação explícita do responsável pelo projeto.",
+  "project_name": "RealPalpiteFC",
+  "github": "https://github.com/seeroddsapp-collab/RealPalpiteFC",
+  "supabase_url": "https://rczxqhvtqnpbtvzkjpml.supabase.co",
+  "credentials_location": "Credenciais (ANON KEY, SERVICE ROLE) ficam exclusivamente nos arquivos .env de cada app. Nunca em código, nunca em documentação.",
+  "description": "Motor de bolões esportivos via bot de Telegram, com painel administrativo, para licenciamento white-label a operadoras de apostas licenciadas pela SPA (Brasil).",
+  "legal_constraint": {
+    "rule": "O sistema NUNCA deve processar dinheiro real diretamente. Apenas créditos/pontos virtuais durante desenvolvimento e testes. Integração com dinheiro real só ocorre via carteira de operadora licenciada, na versão white-label.",
+    "do_not": "Não implementar gateway de pagamento, PIX, cartão ou qualquer custódia de dinheiro real dentro deste repositório sem revisão explícita."
+  },
+  "monorepo_structure": {
+    "apps/bot": {
+      "hosted_on": "Render",
+      "responsibility": "Interface conversacional do Telegram. Recebe comandos, chama packages/core e packages/database, roda o cron de verificação de resultados.",
+      "must_not": "Conter lógica de cálculo de prêmio/taxa diretamente. Deve sempre delegar para packages/core."
+    },
+    "apps/admin": {
+      "hosted_on": "Vercel",
+      "framework": "Next.js",
+      "responsibility": "Painel administrativo: dashboards, histórico, intervenção manual em resultados, gestão de usuários e campeonatos.",
+      "must_not": "Duplicar lógica de negócio já existente em packages/core."
+    },
+    "packages/core": {
+      "responsibility": "Regras de negócio puras. Sem dependência de Telegram, Next.js ou qualquer framework de interface.",
+      "must_not": "Importar de apps/bot ou apps/admin (dependência é sempre em uma direção: apps -> packages).",
+      "requires_tests": true,
+      "critical_files": ["pool-calculator", "list-rules", "types"]
+    },
+    "packages/sports-data": {
+      "responsibility": "Camada adapter para provedores de dados esportivos. Toda consulta a placar/status de partida passa por uma interface comum (provider-interface), nunca chamando ESPN ou football-data.org diretamente de apps/*.",
+      "pattern": "adapter"
+    },
+    "packages/database": {
+      "responsibility": "Cliente Supabase e repositórios reutilizáveis (ex: listas.repository, usuarios.repository, apostas.repository).",
+      "must_not": "Expor queries SQL cruas fora desta camada."
+    },
+    "supabase/migrations": {
+      "responsibility": "Histórico versionado do schema do banco.",
+      "rule": "Toda alteração de schema em produção deve gerar uma migration. Proibido alterar tabelas direto pelo Table Editor em produção."
+    }
+  },
+  "tech_stack": {
+    "bot_runtime": "Node.js (Telegraf) ou Python (python-telegram-bot)",
+    "admin_framework": "Next.js",
+    "database": "Supabase (Postgres + Auth)",
+    "hosting_bot": "Render (free tier para MVP; cron frequente e execuções longas suportadas)",
+    "hosting_admin": "Vercel (free tier; baixo tráfego, sem necessidade de cron frequente)",
+    "language": "TypeScript em todo o projeto, tipos compartilhados via packages/core"
+  },
+  "sports_data_providers": {
+    "primary": {
+      "name": "ESPN",
+      "type": "endpoint não-oficial (reverse-engineered)",
+      "coverage": ["bra.1", "bra.2", "bra.copa_do_brazil", "arg.1", "arg.copa", "conmebol.libertadores", "conmebol.sudamericana", "conmebol.america"],
+      "risk": "Sem SLA, sem autenticação oficial, pode mudar ou ser bloqueado sem aviso. Requer fallback obrigatório."
+    },
+    "fallback": {
+      "name": "football-data.org",
+      "type": "API oficial, gratuita para competições listadas",
+      "coverage": ["Champions League", "Premier League", "La Liga", "Bundesliga", "Ligue 1", "Serie A (Itália)", "Serie A (Brasil)", "Eredivisie", "Primeira Liga", "Championship", "World Cup", "European Championship"]
+    },
+    "future_paid_provider": {
+      "name": "API-Football (plano pago) ou FootyStats",
+      "reason": "Necessário apenas quando modalidades de Escanteios/Cartões/Faltas forem implementadas (fase 2). Não usar na fase MVP."
+    },
+    "resolution_order": "ESPN primeiro; se indisponível ou divergente, usar football-data.org."
+  },
+  "business_rules": {
+    "list_lock_minutes_before_kickoff": 5,
+    "fee_with_winner_percent": 5,
+    "fee_no_winner_percent": 10,
+    "single_participant_refund_percent": 100,
+    "match_cancelled_refund_percent": 100,
+    "max_entries_per_user_per_list": 2,
+    "prize_rounding_remainder_goes_to": "house",
+    "prize_distribution_unit": "ticket (não usuário) — cada entrada do mesmo usuário conta como bilhete independente na divisão do prêmio",
+    "match_time_scope": "apenas tempo normal (90 minutos); prorrogação e pênaltis fora de escopo por enquanto",
+    "list_type_global": {
+      "value_tiers_brl": {
+        "dupla_chance_resultado": [5, 10, 25],
+        "total_de_gols": [5, 10, 25, 50],
+        "placar_exato": [10, 25, 50]
+      },
+      "rationale": "Tiers variam por dificuldade da modalidade: modalidades mais fáceis não têm tier alto (R$50), modalidade mais difícil não tem tier baixo (R$5)."
+    },
+    "list_type_private": {
+      "value": "livre, definido pelo criador da lista"
+    }
+  },
+  "modalities": {
+    "mvp": ["dupla_chance_resultado", "total_de_gols", "placar_exato"],
+    "future_phase_2": ["escanteios", "cartoes", "faltas"]
+  },
+  "admin_panel_requirements": {
+    "manual_result_override": {
+      "required": true,
+      "audit_log_required": true,
+      "audit_log_fields": ["admin_id", "timestamp", "list_id", "previous_result", "new_result", "reason"]
+    }
+  },
+  "ai_agent_instructions": {
+    "before_any_change": "Ler este arquivo e PROJETO.md por completo antes de criar, implementar ou refatorar código.",
+    "never_change_without_confirmation": [
+      "business_rules (taxas, tiers, limites de entrada, regras de devolução)",
+      "estrutura de packages/core sem atualizar os testes correspondentes",
+      "direção de dependência do monorepo (apps -> packages, nunca o contrário)",
+      "resolution_order dos provedores de dados esportivos"
+    ],
+    "always_do": [
+      "Gerar migration ao alterar schema do Supabase",
+      "Adicionar/atualizar testes em packages/core ao alterar cálculo de prêmio ou taxa",
+      "Manter packages/sports-data como único ponto de integração com APIs externas de esporte"
+    ]
+  }
+}

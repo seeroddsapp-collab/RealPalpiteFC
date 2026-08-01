@@ -1,0 +1,21 @@
+{
+  "name": "@realpalpitefc/bot",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@realpalpitefc/core": "workspace:*",
+    "@realpalpitefc/database": "workspace:*",
+    "@realpalpitefc/sports-data": "workspace:*",
+    "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "ts-node-dev": "^2.0.0"
+  }
+}
