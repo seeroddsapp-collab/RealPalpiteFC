@@ -89,31 +89,27 @@ export function registerPoolsActions(bot: { action: (...args: unknown[]) => void
     const poolsText = msgPools(match);
     const poolsMarkup = kbPools(pools, matchId, entryCounts).reply_markup;
 
-    // Se tem logos dos dois times, gera imagem VS; senão usa só o escudo do time da casa
+    // Se tem logos dos dois times, gera imagem VS com timeout de 4s; senão texto puro
     if (match.home_team_logo_url && match.away_team_logo_url) {
-      try {
-        const vsImage = await generateVsImage(
+      const timeout = new Promise<null>(res => setTimeout(() => res(null), 4000));
+      const imageResult = await Promise.race([
+        generateVsImage(
           match.home_team_logo_url,
           match.away_team_logo_url,
           match.home_team,
           match.away_team,
-        );
+        ).catch(() => null),
+        timeout,
+      ]);
+      if (imageResult) {
         try { await ctx.deleteMessage(); } catch {}
         await ctx.replyWithPhoto(
-          { source: vsImage, filename: 'match.png' },
+          { source: imageResult, filename: 'match.png' },
           { caption: poolsText, parse_mode: 'Markdown', reply_markup: poolsMarkup },
         );
-      } catch {
-        // Fallback se geração falhar
+      } else {
         await safeEdit(ctx, poolsText, { parse_mode: 'Markdown', reply_markup: poolsMarkup });
       }
-    } else if (match.home_team_logo_url) {
-      try { await ctx.deleteMessage(); } catch {}
-      await ctx.replyWithPhoto(match.home_team_logo_url, {
-        caption: poolsText,
-        parse_mode: 'Markdown',
-        reply_markup: poolsMarkup,
-      });
     } else {
       await safeEdit(ctx, poolsText, { parse_mode: 'Markdown', reply_markup: poolsMarkup });
     }

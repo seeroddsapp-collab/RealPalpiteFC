@@ -1,3 +1,4 @@
+import http from 'http';
 import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
@@ -90,8 +91,22 @@ async function main() {
 
   if (webhookDomain) {
     const port = parseInt(process.env.PORT ?? '3000', 10);
-    await bot.launch({ webhook: { domain: webhookDomain, port } });
-    console.log(`🤖 @${me.username} iniciado (webhook) — ${webhookDomain} porta ${port}`);
+    const webhookPath = '/webhook';
+
+    await bot.telegram.setWebhook(`${webhookDomain}${webhookPath}`);
+    const webhookCallback = bot.webhookCallback(webhookPath);
+
+    // Mesmo servidor: /health para o UptimeRobot + /webhook para o Telegram
+    http.createServer((req, res) => {
+      if (req.url === '/health') {
+        res.writeHead(200);
+        res.end('OK');
+        return;
+      }
+      webhookCallback(req, res);
+    }).listen(port);
+
+    console.log(`🤖 @${me.username} iniciado (webhook) — ${webhookDomain}${webhookPath} porta ${port}`);
   } else {
     await bot.launch();
     console.log(`🤖 @${me.username} iniciado (long-polling)`);
