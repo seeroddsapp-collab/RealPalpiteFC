@@ -13,7 +13,75 @@
     "apps/bot": {
       "hosted_on": "Render",
       "responsibility": "Interface conversacional do Telegram. Recebe comandos, chama packages/core e packages/database, roda o cron de verificação de resultados.",
-      "must_not": "Conter lógica de cálculo de prêmio/taxa diretamente. Deve sempre delegar para packages/core."
+      "must_not": "Conter lógica de cálculo de prêmio/taxa diretamente. Deve sempre delegar para packages/core.",
+      "framework": "Telegraf v4 + TypeScript + CommonJS",
+      "entry_point": "src/index.ts",
+      "mode": "long-polling (dev); webhook em produção no Render",
+      "env_vars": ["TELEGRAM_BOT_TOKEN", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "FOOTBALL_DATA_API_KEY"],
+      "implemented_files": [
+        "src/context.ts",
+        "src/index.ts",
+        "src/middleware/auth.middleware.ts",
+        "src/commands/start.command.ts",
+        "src/commands/extrato.command.ts",
+        "src/actions/menu.actions.ts",
+        "src/actions/matches.actions.ts",
+        "src/actions/pools.actions.ts",
+        "src/actions/my-entries.actions.ts",
+        "src/actions/private-pools.actions.ts",
+        "src/scenes/create-pool.scene.ts",
+        "src/services/resolution.service.ts",
+        "src/services/sync-matches.service.ts",
+        "src/cron/close-pools.cron.ts",
+        "src/cron/check-results.cron.ts",
+        "src/formatters/messages.ts",
+        "src/keyboards/keyboards.ts",
+        "src/utils/match-image.ts",
+        "src/assets/vs-template.png",
+        "src/assets/campeonato-template.png"
+      ],
+      "session_type": "BotSession extends WizardSession<WizardSessionData> — user e createPool ficam no nível raiz; __scenes gerenciado pelo Telegraf Scenes",
+      "commands": {
+        "/start": "Registro automático + boas-vindas com saldo. Também trata deep link ?start=join_{poolId}: mostra tela de convite de pool privada.",
+        "/extrato": "Histórico das últimas 20 transações + saldo atual",
+        "/criarlista": "Abre WizardScene de 7 passos: campeonato → partida → modalidade → threshold (só se total_de_gols) → valor → confirmar → criar",
+        "/menu": "Atalho para o menu principal"
+      },
+      "callback_scheme": {
+        "menu": "menu principal",
+        "gl_ch": "lista de campeonatos",
+        "gl_m:{champId}": "partidas de um campeonato (envia foto de campeonato se logo_url disponível)",
+        "gl_p:{matchId}": "pools abertas de uma partida (envia foto VS com escudos dos times)",
+        "gl_e:{poolId}": "detalhe de uma pool + keyboard de palpite",
+        "gl_pr:{poolId}:{pred}": "tela de confirmação do palpite",
+        "gl_ok:{poolId}:{pred}": "confirma e processa a entrada",
+        "me": "menu Minhas Entradas (Ativas / Recentes / Histórico / Gestão de Banca)",
+        "me_ativas": "lista de entradas ativas como botões",
+        "me_entry:{entryId}": "detalhe de uma entrada ativa (mostra cancelamento se dentro do prazo)",
+        "me_cancel:{entryId}": "tela de confirmação de cancelamento de entrada",
+        "me_cancel_ok:{entryId}": "executa cancelamento: delete + refund + updateBalance",
+        "me_rec": "finalizadas recentes (últimas 15)",
+        "me_hist:{period}:{outcome}": "histórico filtrado por período e resultado",
+        "me_banca:{period}": "gestão de banca filtrada por período",
+        "my_pools": "lista de pools privadas criadas pelo usuário com contagem de entradas e status",
+        "my_pool_share:{poolId}": "envia mensagem com deep link de convite para a pool privada",
+        "cp": "entra na cena de criação de lista"
+      },
+      "image_generation": {
+        "vs_image": "match-image.ts: carrega vs-template.png (1536×1024), compõe escudos dos times em posições fixas (fração de dimensão), adiciona nomes via SVG overlay, redimensiona para 900px. Fallback para SVG puro se template ausente.",
+        "championship_image": "match-image.ts: carrega campeonato-template.png (1536×1024), compõe logo do campeonato no centro, redimensiona para 900px. Fallback para SVG puro se template ausente.",
+        "logo_source": "ESPN API: site.api.espn.com/apis/site/v2/sports/soccer/{leagueCode}/scoreboard retorna leagues[].logos[]. Armazenado em championships.logo_url após primeiro sync."
+      },
+      "prediction_encoding": {
+        "dupla_chance_resultado": "callback: h=home, d=draw, a=away | DB: 'home' | 'draw' | 'away'",
+        "total_de_gols": "callback: o_{threshold} ou u_{threshold} (ex: o_2.5, u_1.5) | DB: { choice: 'over'|'under', threshold: 1.5|2.5|3.5 } — threshold é por palpite, não por pool; múltiplos thresholds coexistem na mesma lista",
+        "placar_exato": "callback: {h}-{a} (ex: 2-1) | DB: { homeScore, awayScore }"
+      },
+      "crons": {
+        "close-pools": "setInterval 60s — fecha pools cujo kickoff está a ≤5min; envia notificação push a todos os participantes ao fechar",
+        "check-results": "setInterval 120s — consulta partidas em andamento via SportsDataService, resolve pools ao detectar fim/cancelamento"
+      },
+      "resolution_flow": "resolvePool() em resolution.service.ts: avalia palpites via evaluatePrediction (core), calcula payouts via calculatePool (core), cria transações, atualiza saldos, retorna { scenario, notifications } para push via bot.telegram.sendMessage"
     },
     "apps/admin": {
       "hosted_on": "Vercel",
@@ -25,23 +93,137 @@
       "responsibility": "Regras de negócio puras. Sem dependência de Telegram, Next.js ou qualquer framework de interface.",
       "must_not": "Importar de apps/bot ou apps/admin (dependência é sempre em uma direção: apps -> packages).",
       "requires_tests": true,
-      "critical_files": ["pool-calculator", "list-rules", "types"]
+      "implemented_files": [
+        "src/types/match.ts",
+        "src/types/pool.ts",
+        "src/types/entry.ts",
+        "src/types/user.ts",
+        "src/types/transaction.ts",
+        "src/pool-calculator.ts",
+        "src/list-rules.ts",
+        "src/prediction-evaluator.ts"
+      ],
+      "test_files": [
+        "src/__tests__/pool-calculator.test.ts",
+        "src/__tests__/list-rules.test.ts",
+        "src/__tests__/prediction-evaluator.test.ts"
+      ],
+      "test_count": 34,
+      "type_notes": {
+        "TotalDeGolsPrediction": "objeto { choice: 'over'|'under'; threshold: 1.5|2.5|3.5 } — NÃO é mais string union. DB armazena JSONB deste objeto."
+      },
+      "business_rules_covered": [1, 2, 3, 4, 5, 6, 7, 8, 9]
     },
     "packages/sports-data": {
       "responsibility": "Camada adapter para provedores de dados esportivos. Toda consulta a placar/status de partida passa por uma interface comum (provider-interface), nunca chamando ESPN ou football-data.org diretamente de apps/*.",
-      "pattern": "adapter"
+      "pattern": "adapter",
+      "implemented_files": [
+        "src/types.ts",
+        "src/provider-interface.ts",
+        "src/espn/espn-types.ts",
+        "src/espn/espn-adapter.ts",
+        "src/football-data/football-data-types.ts",
+        "src/football-data/football-data-adapter.ts",
+        "src/sports-data-service.ts",
+        "src/index.ts"
+      ],
+      "test_files": [
+        "src/__tests__/espn-adapter.test.ts",
+        "src/__tests__/football-data-adapter.test.ts",
+        "src/__tests__/sports-data-service.test.ts"
+      ],
+      "test_count": 33,
+      "key_types": {
+        "ProviderMatch": "Tipo unificado de partida retornado por ambos os adaptadores",
+        "ProviderMatchStatus": "'scheduled' | 'in_progress' | 'finished' | 'cancelled' | 'postponed'",
+        "MatchIdentifiers": "{ espnMatchId?, espnLeagueCode?, footballDataMatchId? } — input do SportsDataService",
+        "UpcomingMatchesParams": "{ espnLeagueCode?, footballDataCompetitionCode?, daysAhead? }"
+      },
+      "key_classes": {
+        "EspnAdapter": "Usa /summary?event= para getMatch e /scoreboard para getUpcomingMatches. Requer leagueCode (ex: 'bra.1'). FetchFn injetável para testes.",
+        "FootballDataAdapter": "Usa /v4/matches/{id} e /v4/competitions/{code}/matches. Aceita code numérico ou string. API key via X-Auth-Token.",
+        "SportsDataService": "Orquestra o fallback: ESPN primeiro (erro ou null) → football-data.org. Retorna null/[] se ambos falharem."
+      },
+      "env_vars": {
+        "FOOTBALL_DATA_API_KEY": "Chave gratuita em football-data.org/client/register — cobre Champions, Premier, La Liga, Série A Brasil, etc."
+      }
     },
     "packages/database": {
       "responsibility": "Cliente Supabase e repositórios reutilizáveis (ex: listas.repository, usuarios.repository, apostas.repository).",
-      "must_not": "Expor queries SQL cruas fora desta camada."
+      "must_not": "Expor queries SQL cruas fora desta camada.",
+      "implemented_files": [
+        "src/database.types.ts",
+        "src/client.ts",
+        "src/db.ts",
+        "src/repositories/users.repository.ts",
+        "src/repositories/championships.repository.ts",
+        "src/repositories/matches.repository.ts",
+        "src/repositories/pools.repository.ts",
+        "src/repositories/entries.repository.ts",
+        "src/repositories/transactions.repository.ts",
+        "src/repositories/audit.repository.ts",
+        "src/index.ts"
+      ],
+      "key_classes": {
+        "Db": "Agregador principal: new Db(SUPABASE_URL, SERVICE_ROLE_KEY). Instancia todos os repositórios com um único SupabaseClient.",
+        "UsersRepository": "findByTelegramId, findById, create, upsert, updateBalance, setBlocked",
+        "ChampionshipsRepository": "findActive, findById, updateLogoUrl",
+        "MatchesRepository": "findById, findByIds, create, findByChampionship, findScheduledSoon, findInProgress, updateStatus, upsertByEspnId",
+        "PoolsRepository": "findById, findByIds, create, findOpenByMatch, findOpen, findClosed, close, resolve, cancel",
+        "EntriesRepository": "create, findByPool, findByUser, findAllByUser, findById, deleteById, countByUserAndPool, resolveEntries",
+        "TransactionsRepository": "create, findByUser (paginado), sumFeesByPool, getSummaryByUser (invested/prizes/refunds), findByUserAndPoolIds",
+        "AuditRepository": "create, findByPool, findByAdmin"
+      },
+      "notes": {
+        "database_types": "Tipos definidos manualmente em database.types.ts com Relationships[] para compatibilidade com supabase-js v2.",
+        "no_tests": "Repositórios testados via integração real (Fase 7). Testes unitários com mock Supabase têm baixo valor.",
+        "rls": "Bot usa SERVICE_ROLE_KEY (bypassa RLS). Admin também usa SERVICE_ROLE_KEY no servidor."
+      }
     },
     "supabase/migrations": {
       "responsibility": "Histórico versionado do schema do banco.",
-      "rule": "Toda alteração de schema em produção deve gerar uma migration. Proibido alterar tabelas direto pelo Table Editor em produção."
+      "rule": "Toda alteração de schema em produção deve gerar uma migration. Proibido alterar tabelas direto pelo Table Editor em produção.",
+      "applied_migrations": [
+        "20260801000001_create_users.sql",
+        "20260801000002_create_championships.sql",
+        "20260801000003_create_matches.sql",
+        "20260801000004_create_pools.sql",
+        "20260801000005_create_entries.sql",
+        "20260801000006_create_transactions.sql",
+        "20260801000007_create_audit_log.sql",
+        "20260801000008_enable_rls.sql",
+        "20260802000001_add_dupla_chance_modality.sql",
+        "20260802000002_add_team_logo_urls.sql",
+        "20260802000003_add_championship_logo.sql"
+      ],
+      "schema": {
+        "users":         "id, telegram_id (BIGINT UNIQUE), username, virtual_balance (NUMERIC 12,2 default 100), is_blocked, created_at",
+        "championships": "id, name, espn_code, football_data_code, modalities (TEXT[]), is_active, logo_url (TEXT nullable), created_at",
+        "matches":       "id, championship_id, home_team, away_team, kickoff_at, status (CHECK), result (JSONB), espn_match_id, football_data_match_id, created_at, updated_at (auto-trigger)",
+        "pools":         "id, match_id, modality (CHECK), tier_brl, type (CHECK global|private), status (CHECK), goal_threshold, created_by, closed_at, resolved_at, created_at",
+        "entries":       "id, pool_id, user_id, prediction (JSONB), amount, is_winner (NULL até resolução), created_at",
+        "transactions":  "id, user_id, type (CHECK entry|prize|refund|bonus), amount (>0), balance_after, pool_id, description, created_at",
+        "audit_log":     "id, admin_id, pool_id, previous_result (JSONB), new_result (JSONB), reason, created_at"
+      },
+      "rls": "Habilitado em todas as tabelas. Bot usa SERVICE_ROLE (bypassa RLS). Políticas públicas para championships, matches e pools. Acesso pessoal para users, entries e transactions."
     }
   },
+  "implementation_status": {
+    "fase_0_fundacao": "concluida",
+    "fase_1_core": "concluida",
+    "fase_2_migrations": "concluida",
+    "fase_3_sports_data": "concluida",
+    "fase_4_database": "concluida",
+    "fase_5_bot": "concluida",
+    "fase_6_admin": "pendente",
+    "fase_7_testes_mvp": "pendente",
+    "fase_8_whitelabel": "pendente"
+  },
+  "monorepo_initialized": true,
+  "package_manager": "pnpm@11.18.0",
+  "node_version": ">=20.0.0",
   "tech_stack": {
-    "bot_runtime": "Node.js (Telegraf) ou Python (python-telegram-bot)",
+    "bot_runtime": "Node.js com Telegraf v4",
     "admin_framework": "Next.js",
     "database": "Supabase (Postgres + Auth)",
     "hosting_bot": "Render (free tier para MVP; cron frequente e execuções longas suportadas)",
@@ -73,6 +255,13 @@
     "single_participant_refund_percent": 100,
     "match_cancelled_refund_percent": 100,
     "max_entries_per_user_per_list": 2,
+    "entry_cancellation": {
+      "deadline": "até 5 minutos antes do kickoff (mesmo critério de fechamento do pool)",
+      "refund_percent": 100,
+      "pool_behavior": "pool permanece aberta; outros participantes não são afetados",
+      "reentry": "cancelamento não impede re-entrada; limite de 2 entradas ainda se aplica",
+      "implemented_in": "canUserCancelEntry() em packages/core/src/list-rules.ts"
+    },
     "prize_rounding_remainder_goes_to": "house",
     "prize_distribution_unit": "ticket (não usuário) — cada entrada do mesmo usuário conta como bilhete independente na divisão do prêmio",
     "match_time_scope": "apenas tempo normal (90 minutos); prorrogação e pênaltis fora de escopo por enquanto",

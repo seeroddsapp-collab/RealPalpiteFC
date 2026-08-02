@@ -7,28 +7,28 @@
 
 ## Status atual
 
-- **Última sessão:** —
-- **Fase em andamento:** Fase 0 — Fundação do Projeto
-- **Próximo passo:** Inicializar monorepo com pnpm workspaces (repositório já existe: github.com/seeroddsapp-collab/RealPalpiteFC)
+- **Última sessão:** 2026-08-02
+- **Fase concluída:** Fase 5 — apps/bot (completo, incluindo fluxos de pool privada, notificações de fechamento, multi-threshold Total de Gols e formatters atualizados)
+- **Próximo passo:** Fase 6 — apps/admin (painel administrativo Next.js) **ou** testar o bot com token real do BotFather
 
 ---
 
 ## Fase 0 — Fundação do Projeto
 
 - [x] Criar repositório no GitHub — https://github.com/seeroddsapp-collab/RealPalpiteFC
-- [ ] Inicializar monorepo com `pnpm workspaces`
-- [ ] Configurar TypeScript base — `tsconfig` raiz + `tsconfig` por pacote
-- [ ] Configurar ESLint + Prettier compartilhados entre todos os pacotes
-- [ ] Criar estrutura de pastas:
-  - [ ] `apps/bot`
-  - [ ] `apps/admin`
-  - [ ] `packages/core`
-  - [ ] `packages/sports-data`
-  - [ ] `packages/database`
-  - [ ] `supabase/migrations`
+- [x] Inicializar monorepo com `pnpm workspaces`
+- [x] Configurar TypeScript base — `tsconfig.base.json` raiz + `tsconfig.json` por pacote
+- [x] Configurar ESLint + Prettier compartilhados entre todos os pacotes
+- [x] Criar estrutura de pastas:
+  - [x] `apps/bot`
+  - [x] `apps/admin`
+  - [x] `packages/core`
+  - [x] `packages/sports-data`
+  - [x] `packages/database`
+  - [x] `supabase/migrations`
 - [x] Criar projeto no Supabase — https://rczxqhvtqnpbtvzkjpml.supabase.co
-- [ ] Criar `.env.example` em cada app com todas as variáveis necessárias
-- [ ] Instalar e configurar `claude-mem` para memória persistente de sessão
+- [x] Criar `.env.example` em cada app com todas as variáveis necessárias
+- [x] Instalar e configurar `claude-mem` para memória persistente de sessão
 - [ ] Atualizar `architecture.json` refletindo o estado inicial real
 
 ---
@@ -37,15 +37,15 @@
 
 > Lógica pura, sem dependência de frameworks. **Testes unitários obrigatórios.**
 
-- [ ] Definir tipos TypeScript compartilhados: `Match`, `Pool`, `Entry`, `User`, `Modality`, `Tier`, `Transaction`
-- [ ] `pool-calculator`: prêmio = soma das entradas × 95% quando há acertador (taxa da casa = 5%)
-- [ ] `pool-calculator`: sem acertador com 2+ participantes — taxa 10%, devolução proporcional de 90%
-- [ ] `pool-calculator`: 1 participante ao fechar — devolução 100% sem taxa
-- [ ] `pool-calculator`: jogo cancelado ou adiado — devolução 100% a todos
-- [ ] `pool-calculator`: divisão de prêmio por bilhete (não por usuário); resíduo de arredondamento fica com a casa
-- [ ] `list-rules`: fechamento automático 5 min antes do kickoff; máx 2 entradas por usuário por pool
-- [ ] Testes unitários cobrindo todos os cenários das Regras 1–9 do `PROJETO.md`
-- [ ] Atualizar `architecture.json`
+- [x] Definir tipos TypeScript compartilhados: `Match`, `Pool`, `Entry`, `User`, `Modality`, `Tier`, `Transaction`
+- [x] `pool-calculator`: prêmio = soma das entradas × 95% quando há acertador (taxa da casa = 5%)
+- [x] `pool-calculator`: sem acertador com 2+ participantes — taxa 10%, devolução proporcional de 90%
+- [x] `pool-calculator`: 1 participante ao fechar — devolução 100% sem taxa
+- [x] `pool-calculator`: jogo cancelado ou adiado — devolução 100% a todos
+- [x] `pool-calculator`: divisão de prêmio por bilhete (não por usuário); resíduo de arredondamento fica com a casa
+- [x] `list-rules`: fechamento automático 5 min antes do kickoff; máx 2 entradas por usuário por pool
+- [x] Testes unitários cobrindo todos os cenários das Regras 1–9 do `PROJETO.md` (31 testes, 3 arquivos)
+- [x] Atualizar `architecture.json`
 
 ---
 
@@ -53,15 +53,15 @@
 
 > Toda mudança de schema **gera uma migration versionada**. Nunca alterar tabelas direto em produção.
 
-- [ ] Migration: `users` — `telegram_id`, `username`, `virtual_balance`, `is_blocked`, `created_at`
-- [ ] Migration: `championships` — `name`, `espn_code`, `football_data_code`, `modalities[]`, `is_active`
-- [ ] Migration: `matches` — `championship_id`, `home_team`, `away_team`, `kickoff_at`, `status`, `result`
-- [ ] Migration: `pools` — `match_id`, `modality`, `tier_brl`, `type` (global|private), `status`, `created_by`
-- [ ] Migration: `entries` — `pool_id`, `user_id`, `prediction`, `amount`, `is_winner`
-- [ ] Migration: `transactions` — `user_id`, `type`, `amount`, `balance_after`, `pool_id`, `description`
-- [ ] Migration: `audit_log` — `admin_id`, `pool_id`, `previous_result`, `new_result`, `reason`, `created_at`
-- [ ] Configurar Row Level Security (RLS) em todas as tabelas
-- [ ] Atualizar `architecture.json` com schema completo e relacionamentos
+- [x] Migration: `users` — `telegram_id`, `username`, `virtual_balance`, `is_blocked`, `created_at`
+- [x] Migration: `championships` — `name`, `espn_code`, `football_data_code`, `modalities[]`, `is_active`
+- [x] Migration: `matches` — `championship_id`, `home_team`, `away_team`, `kickoff_at`, `status`, `result`
+- [x] Migration: `pools` — `match_id`, `modality`, `tier_brl`, `type` (global|private), `status`, `created_by`
+- [x] Migration: `entries` — `pool_id`, `user_id`, `prediction`, `amount`, `is_winner`
+- [x] Migration: `transactions` — `user_id`, `type`, `amount`, `balance_after`, `pool_id`, `description`
+- [x] Migration: `audit_log` — `admin_id`, `pool_id`, `previous_result`, `new_result`, `reason`, `created_at`
+- [x] Configurar Row Level Security (RLS) em todas as tabelas
+- [x] Atualizar `architecture.json` com schema completo e relacionamentos
 
 ---
 
@@ -69,12 +69,12 @@
 
 > Único ponto de contato com APIs externas. Trocar provedor é configuração, não reescrita.
 
-- [ ] Definir interface comum do provedor: `getMatch()`, `getLiveScore()`, `getMatchStatus()`
-- [ ] ESPN adapter — endpoints não-oficiais: `bra.1`, `arg.1`, Libertadores, Sudamericana, Copa do Brasil…
-- [ ] football-data.org adapter — API oficial: Champions, Premier League, La Liga, Série A…
-- [ ] Lógica de fallback: ESPN → football-data.org com detecção de erro/indisponibilidade
-- [ ] Testes com ambos os provedores mockados verificando contrato da interface comum
-- [ ] Atualizar `architecture.json`
+- [x] Definir interface comum do provedor: `SportsDataProvider` com `getMatch()` e `getUpcomingMatches()`
+- [x] ESPN adapter — endpoints não-oficiais: scoreboard + summary para `bra.1`, `arg.1`, Libertadores…
+- [x] football-data.org adapter — API oficial: Champions, Premier League, La Liga, Série A Brasil…
+- [x] Lógica de fallback: ESPN → football-data.org com detecção de erro/null automática (`SportsDataService`)
+- [x] 33 testes com ambos os provedores mockados via injeção de dependência (`FetchFn`)
+- [x] Atualizar `architecture.json`
 
 ---
 
@@ -82,14 +82,16 @@
 
 > Cliente Supabase e repositórios reutilizáveis. SQL nunca exposto fora desta camada.
 
-- [ ] Configurar cliente Supabase compartilhado com tipagem gerada (`supabase gen types`)
-- [ ] `UsersRepository`: criar usuário, buscar por `telegram_id`, atualizar saldo virtual
-- [ ] `PoolsRepository`: criar pool, buscar abertos por partida, fechar, marcar como resolvido
-- [ ] `EntriesRepository`: criar entrada, buscar por pool, contar entradas por usuário no pool
-- [ ] `TransactionsRepository`: registrar débito/crédito, extrato paginado por usuário
-- [ ] `AuditRepository`: registrar intervenção manual, buscar log por pool ou por admin
-- [ ] `MatchesRepository`: CRUD de partidas + busca por campeonato e janela de data
-- [ ] Atualizar `architecture.json`
+- [x] Configurar cliente Supabase com tipagem manual alinhada ao schema (`database.types.ts`)
+- [x] `UsersRepository`: criar, buscar por `telegram_id`/`id`, upsert, atualizar saldo, bloquear
+- [x] `PoolsRepository`: criar, buscar abertos por partida, buscar abertos/fechados global, fechar, resolver, cancelar
+- [x] `EntriesRepository`: criar, buscar por pool/usuário, contar por usuário+pool, resolver (marcar winners/losers)
+- [x] `TransactionsRepository`: criar, extrato paginado por usuário, soma de taxas por pool
+- [x] `AuditRepository`: criar, buscar por pool, buscar por admin
+- [x] `ChampionshipsRepository`: buscar ativos, buscar por id
+- [x] `MatchesRepository`: criar, buscar por id/campeonato, buscar partidas próximas (cron), buscar em andamento, atualizar status
+- [x] Classe `Db` agrega todos os repositórios — instância única via `new Db(url, key)`
+- [x] Build TypeScript limpo (sem erros)
 
 ---
 
@@ -97,20 +99,52 @@
 
 > Hospedado no Render. Toda lógica de cálculo **delegada ao `packages/core`**.
 
-- [ ] Setup do projeto Telegraf (Node.js/TypeScript) + integração com `packages/*`
-- [ ] `/start`: registro automático do novo usuário + mensagem de boas-vindas com saldo inicial
-- [ ] Menu principal com `InlineKeyboard`: Listas Globais | Minhas Listas | Criar Lista
-- [ ] Fluxo de navegação: Campeonato → Jogo → Modalidade → Tier → Confirmar entrada
-- [ ] `/entrar`: validações (lista aberta, ≤ 2 entradas, saldo suficiente) + débito no saldo
-- [ ] `/extrato`: histórico de transações paginado + saldo atual em pontos virtuais
-- [ ] `/criarlista`: fluxo de criação de pool privado com valor livre definido pelo criador
-- [ ] Notificações push: resultado disponível, prêmio creditado, devolução realizada
-- [ ] Cron: fechar pools 5 min antes do kickoff de cada partida aberta
-- [ ] Cron: verificar resultados de partidas em andamento a cada 1–2 min via `sports-data`
-- [ ] Resolução automática: calcular vencedores via `core`, creditar prêmio/devolução, registrar transações
-- [ ] Tratamento de erros com mensagens amigáveis (sem stack traces expostos ao usuário)
-- [ ] Variáveis de ambiente documentadas para deploy no Render
-- [ ] Deploy no Render + configurar webhook (ou long-polling) do Telegram Bot API
+- [x] Setup do projeto Telegraf (Node.js/TypeScript) + integração com `packages/*`
+- [x] `/start`: registro automático do novo usuário + mensagem de boas-vindas com saldo inicial
+- [x] Menu principal com `InlineKeyboard`: Listas Globais | Minhas Listas | Criar Lista
+- [x] Fluxo de navegação: Campeonato → Jogo → Modalidade → Tier → Confirmar entrada
+- [x] `/entrar`: validações (lista aberta, ≤ 2 entradas, saldo suficiente) + débito no saldo
+- [x] `/extrato`: histórico de transações paginado + saldo atual em pontos virtuais
+- [x] `/criarlista`: fluxo de criação de pool privado com valor livre definido pelo criador
+- [x] Notificações push: resultado disponível, prêmio creditado, devolução realizada
+- [x] Cron: fechar pools 5 min antes do kickoff de cada partida aberta
+- [x] Cron: verificar resultados de partidas em andamento a cada 1–2 min via `sports-data`
+- [x] Resolução automática: calcular vencedores via `core`, creditar prêmio/devolução, registrar transações
+- [x] Tratamento de erros com mensagens amigáveis (sem stack traces expostos ao usuário)
+- [x] Variáveis de ambiente documentadas para deploy no Render
+- [x] Build TypeScript limpo (zero erros)
+- [x] Imagens de partida geradas via template PNG personalizado (vs-template.png + campeonato-template.png)
+- [x] Logo de campeonato buscado da ESPN e armazenado em `championships.logo_url`
+- [x] Imagem de campeonato gerada ao navegar para partidas (campeonato-template.png + sharp)
+- [x] Validação de limite de 2 entradas por bolão — alerta visível ao usuário (answerCbQuery fix)
+- [x] **Minhas Entradas** completo:
+  - [x] Menu com Ativas / Finalizadas Recentes / Histórico / Gestão de Banca
+  - [x] Ativas: lista de entradas abertas como botões clicáveis; tela de detalhe por entrada
+  - [x] Finalizadas Recentes: últimas 15 entradas resolvidas/canceladas
+  - [x] Histórico com filtros de período (7d / 30d / 90d / Tudo) e resultado (Todas / Ganhos / Perdas)
+  - [x] Gestão de Banca: investido, prêmios, devoluções, taxa retida real, aproveitamento — filtro por período
+- [x] **Cancelamento de entrada** (Regra 8):
+  - [x] Permitido até 5 min antes do kickoff (mesmo critério do fechamento do pool)
+  - [x] Devolução de 100% do valor apostado
+  - [x] Pool permanece aberta (outros participantes não são afetados)
+  - [x] Não restringe re-entrada (limite de 2 entradas continua contando normalmente)
+  - [x] Fluxo: Detalhe → Confirmar cancelamento → Processado (exclusão + transação de refund + saldo atualizado)
+- [x] **Gaps de fluxo resolvidos:**
+  - [x] Tier salvo corretamente na sessão do wizard (bug: `__tier` nunca era persistido)
+  - [x] Fluxo de convite e entrada em pool privada via deep link (`?start=join_{poolId}`)
+  - [x] Notificação de fechamento de pool enviada a todos os participantes (cron)
+  - [x] Criador pode ver suas pools privadas em "Minhas Listas" (`my_pools`) com link de compartilhamento
+  - [x] Toast do Telegram ao abrir Histórico / Recentes / Banca vazios
+  - [x] Seção de cancelamento adicionada ao "Como Jogar"
+- [x] **Total de Gols — multi-threshold:**
+  - [x] `TotalDeGolsPrediction` alterado de string para `{ choice: 'over' | 'under'; threshold: 1.5 | 2.5 | 3.5 }`
+  - [x] Threshold passa a ser **por palpite** (não mais por pool) — múltiplos thresholds coexistem na mesma lista
+  - [x] Keyboard mostra 6 opções: Over/Under × 1.5 / 2.5 / 3.5 (tanto listas globais quanto privadas)
+  - [x] Wizard de criação ainda pede threshold padrão para referência (exibição no label da lista)
+  - [x] `parsePrediction`, `evaluatePrediction`, `decodePred`, `fmtPredFromDb` e `resolution.service` atualizados
+  - [x] Testes unitários atualizados (8 casos de total_de_gols cobrindo todos os thresholds)
+  - [x] Build e type-check limpos (`pnpm --filter @realpalpitefc/core build && tsc --noEmit`)
+- [ ] Deploy no Render + configurar TELEGRAM_BOT_TOKEN via BotFather
 - [ ] Atualizar `architecture.json` com comandos, fluxos e crons implementados
 
 ---

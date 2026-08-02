@@ -1,4 +1,4 @@
-// Ponto de entrada do packages/core.
-// Exportações das Fases 1: tipos, pool-calculator e list-rules.
-
-export {};
+export * from './types';
+export * from './pool-calculator';
+export * from './list-rules';
+export * from './prediction-evaluator';
