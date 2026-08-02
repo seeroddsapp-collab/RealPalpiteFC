@@ -2,7 +2,6 @@ import type { BotContext } from '../context';
 import type { Db } from '@realpalpitefc/database';
 import { msgMatches } from '../formatters/messages';
 import { kbMatches } from '../keyboards/keyboards';
-import { generateChampionshipImage } from '../utils/match-image';
 
 type MatchCtx = BotContext & { match: RegExpMatchArray };
 
@@ -30,27 +29,9 @@ export function registerMatchesActions(bot: { action: (...args: unknown[]) => vo
     const in21Days = new Date(now.getTime() + 21 * 86_400_000);
     const matches = await db.matches.findByChampionship(champId, now, in21Days);
 
-    const matchText = msgMatches(champ.name);
-    const matchMarkup = kbMatches(matches).reply_markup;
-
-    // Exibe banner do campeonato se houver logo disponível
-    if (champ.logo_url) {
-      try {
-        const banner = await generateChampionshipImage(champ.logo_url, champ.name);
-        try { await ctx.deleteMessage(); } catch {}
-        await ctx.replyWithPhoto(
-          { source: banner, filename: 'championship.png' },
-          { caption: matchText, parse_mode: 'Markdown', reply_markup: matchMarkup },
-        );
-        return;
-      } catch {
-        // fallback para texto se a imagem falhar
-      }
-    }
-
-    await safeEdit(ctx, matchText, {
+    await safeEdit(ctx, msgMatches(champ.name), {
       parse_mode: 'Markdown',
-      reply_markup: matchMarkup,
+      reply_markup: kbMatches(matches).reply_markup,
     });
   });
 }
