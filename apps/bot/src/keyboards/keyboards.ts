@@ -30,19 +30,25 @@ export function kbMatches(matches: MatchRow[]) {
   return Markup.inlineKeyboard(rows);
 }
 
+export function kbTierSelect(tiers: number[], matchId: string) {
+  const rows = tiers.map(t => [Markup.button.callback(`💰 R$ ${t}`, `gl_tier:${matchId}:${t}`)]);
+  rows.push([Markup.button.callback('⬅️ Campeonatos', 'gl_ch')]);
+  return Markup.inlineKeyboard(rows);
+}
+
 export function kbPools(pools: PoolRow[], matchId: string, entryCounts: Record<string, number> = {}) {
   if (pools.length === 0) {
-    return Markup.inlineKeyboard([[Markup.button.callback('⬅️ Partidas', `gl_m_back:${matchId}`)]]);
+    return Markup.inlineKeyboard([[Markup.button.callback('⬅️ Escolher valor', `gl_p:${matchId}`)]]);
   }
   const rows = pools.map(p => {
     const tipo = p.type === 'global' ? '🌐' : '🔒';
     const count = entryCounts[p.id] ?? 0;
     const jogadores = count === 1 ? '1 jogador' : `${count} jogadores`;
     const modalLabel = fmtModality(p.modality);
-    const label = `${tipo} ${modalLabel} - R$${p.tier_brl.toFixed(0)} · ${jogadores}`;
+    const label = `${tipo} ${modalLabel} · ${jogadores}`;
     return [Markup.button.callback(label, `gl_e:${p.id}`)];
   });
-  rows.push([Markup.button.callback('⬅️ Campeonatos', 'gl_ch')]);
+  rows.push([Markup.button.callback('⬅️ Escolher valor', `gl_p:${matchId}`)]);
   return Markup.inlineKeyboard(rows);
 }
 

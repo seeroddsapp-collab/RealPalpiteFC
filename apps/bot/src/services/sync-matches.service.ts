@@ -1,19 +1,39 @@
-import type { Db, PoolInsert } from '@realpalpitefc/database';
+import type { Db, PoolInsert, PoolRow } from '@realpalpitefc/database';
 import type { SportsDataService } from '@realpalpitefc/sports-data';
 
 const DAYS_AHEAD = 21;
 const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 horas
 
-// Pools globais criadas automaticamente para cada partida nova do ESPN
-const DEFAULT_GLOBAL_POOLS: Omit<PoolInsert, 'match_id' | 'created_by'>[] = [
+// Pools globais criadas automaticamente para cada partida
+const GLOBAL_POOLS_CONFIG: Omit<PoolInsert, 'match_id' | 'created_by'>[] = [
+  // Resultado 1X2: R$5, R$10, R$25
+  { modality: 'dupla_chance_resultado', tier_brl: 5,  type: 'global', status: 'open' },
   { modality: 'dupla_chance_resultado', tier_brl: 10, type: 'global', status: 'open' },
+  { modality: 'dupla_chance_resultado', tier_brl: 25, type: 'global', status: 'open' },
+  // Dupla Chance: R$5, R$10, R$25
+  { modality: 'dupla_chance',           tier_brl: 5,  type: 'global', status: 'open' },
   { modality: 'dupla_chance',           tier_brl: 10, type: 'global', status: 'open' },
-  { modality: 'total_de_gols',          tier_brl: 10, type: 'global', status: 'open', goal_threshold: 2.5 },
+  { modality: 'dupla_chance',           tier_brl: 25, type: 'global', status: 'open' },
+  // Total de Gols: R$5, R$10, R$25, R$50
+  { modality: 'total_de_gols',          tier_brl: 5,  type: 'global', status: 'open' },
+  { modality: 'total_de_gols',          tier_brl: 10, type: 'global', status: 'open' },
+  { modality: 'total_de_gols',          tier_brl: 25, type: 'global', status: 'open' },
+  { modality: 'total_de_gols',          tier_brl: 50, type: 'global', status: 'open' },
+  // Placar Exato: R$10, R$25, R$50
+  { modality: 'placar_exato',           tier_brl: 10, type: 'global', status: 'open' },
   { modality: 'placar_exato',           tier_brl: 25, type: 'global', status: 'open' },
+  { modality: 'placar_exato',           tier_brl: 50, type: 'global', status: 'open' },
 ];
 
-async function createDefaultPools(db: Db, matchId: string, createdBy: string): Promise<void> {
-  for (const pool of DEFAULT_GLOBAL_POOLS) {
+async function createMissingPools(
+  db: Db,
+  matchId: string,
+  createdBy: string,
+  existing: PoolRow[],
+): Promise<void> {
+  const existingKeys = new Set(existing.map(p => `${p.modality}:${p.tier_brl}`));
+  const missing = GLOBAL_POOLS_CONFIG.filter(p => !existingKeys.has(`${p.modality}:${p.tier_brl}`));
+  for (const pool of missing) {
     await db.pools.create({ ...pool, match_id: matchId, created_by: createdBy });
   }
 }
@@ -65,14 +85,12 @@ export async function syncMatches(db: Db, sportsData: SportsDataService): Promis
           updated++;
         }
 
-        // Cria pools globais se a partida ainda não tiver nenhuma
+        // Cria pools globais faltantes para a partida
         if (systemUserId) {
           const existingPools = await db.pools.findOpenByMatch(matchId);
-          if (existingPools.length === 0) {
-            await createDefaultPools(db, matchId, systemUserId).catch(err =>
-              console.error(`[sync] Erro ao criar pools para partida ${matchId}:`, err),
-            );
-          }
+          await createMissingPools(db, matchId, systemUserId, existingPools).catch((err: unknown) =>
+            console.error(`[sync] Erro ao criar pools para partida ${matchId}:`, err),
+          );
         }
       }
 

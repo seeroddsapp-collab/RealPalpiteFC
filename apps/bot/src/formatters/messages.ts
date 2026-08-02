@@ -124,6 +124,14 @@ export function msgNoMatches(): string {
   return '😕 Nenhuma partida disponivel nos proximos 21 dias.';
 }
 
+export function msgTierSelect(match: MatchRow): string {
+  return (
+    `⚽ *${match.home_team} × ${match.away_team}*\n` +
+    `_${fmtDate(match.kickoff_at)}_\n\n` +
+    `💰 Escolha o valor de entrada:`
+  );
+}
+
 export function msgPools(match: MatchRow): string {
   return (
     `⚽ *${match.home_team} x ${match.away_team}*\n` +

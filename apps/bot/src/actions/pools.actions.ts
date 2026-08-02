@@ -8,6 +8,7 @@ import type {
 } from '@realpalpitefc/core';
 import { canUserEnterPool } from '@realpalpitefc/core';
 import {
+  msgTierSelect,
   msgPools,
   msgNoPools,
   msgPoolDetail,
@@ -15,7 +16,7 @@ import {
   msgEntryOk,
   decodePred,
 } from '../formatters/messages';
-import { kbPools, kbPrediction, kbConfirm, kbBackToMenu } from '../keyboards/keyboards';
+import { kbTierSelect, kbPools, kbPrediction, kbConfirm, kbBackToMenu } from '../keyboards/keyboards';
 
 type MatchCtx = BotContext & { match: RegExpMatchArray };
 
@@ -61,7 +62,7 @@ function parsePrediction(
 
 export function registerPoolsActions(bot: { action: (...args: unknown[]) => void }, db: Db) {
 
-  // gl_p:{matchId} — lista de pools abertas para uma partida
+  // gl_p:{matchId} — selecionar tier de entrada
   (bot as any).action(/^gl_p:(.+)$/, async (ctx: MatchCtx) => {
     await ctx.answerCbQuery();
     const matchId = ctx.match[1];
@@ -79,16 +80,43 @@ export function registerPoolsActions(bot: { action: (...args: unknown[]) => void
       return;
     }
 
-    // Busca contagem de entradas para cada pool em paralelo
+    const tiers = [...new Set(pools.map(p => p.tier_brl))].sort((a, b) => a - b);
+
+    await safeEdit(ctx, msgTierSelect(match), {
+      parse_mode: 'Markdown',
+      reply_markup: kbTierSelect(tiers, matchId).reply_markup,
+    });
+  });
+
+  // gl_tier:{matchId}:{tier} — pools filtradas pelo tier escolhido
+  (bot as any).action(/^gl_tier:(.{36}):(\d+)$/, async (ctx: MatchCtx) => {
+    await ctx.answerCbQuery();
+    const matchId = ctx.match[1];
+    const tier = parseInt(ctx.match[2], 10);
+
+    const match = await db.matches.findById(matchId);
+    if (!match) { await ctx.answerCbQuery('Partida não encontrada.'); return; }
+
+    const allPools = await db.pools.findOpenByMatch(matchId);
+    const pools = allPools.filter(p => p.tier_brl === tier);
+
+    if (pools.length === 0) {
+      await safeEdit(ctx, msgNoPools(), {
+        parse_mode: 'Markdown',
+        reply_markup: kbBackToMenu().reply_markup,
+      });
+      return;
+    }
+
     const counts = await Promise.all(
       pools.map(p => db.entries.findByPool(p.id).then(e => [p.id, e.length] as [string, number])),
     );
     const entryCounts = Object.fromEntries(counts);
 
-    const poolsText = msgPools(match);
-    const poolsMarkup = kbPools(pools, matchId, entryCounts).reply_markup;
-
-    await safeEdit(ctx, poolsText, { parse_mode: 'Markdown', reply_markup: poolsMarkup });
+    await safeEdit(ctx, msgPools(match), {
+      parse_mode: 'Markdown',
+      reply_markup: kbPools(pools, matchId, entryCounts).reply_markup,
+    });
   });
 
   // gl_e:{poolId} — detalhe da pool + opções de palpite
