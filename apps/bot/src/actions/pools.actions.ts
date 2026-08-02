@@ -1,6 +1,5 @@
 import type { BotContext } from '../context';
 import type { Db, PoolRow, Json } from '@realpalpitefc/database';
-import { generateVsImage } from '../utils/match-image';
 import type {
   ResultadoPrediction,
   DuplaChancePrediction,
@@ -89,30 +88,7 @@ export function registerPoolsActions(bot: { action: (...args: unknown[]) => void
     const poolsText = msgPools(match);
     const poolsMarkup = kbPools(pools, matchId, entryCounts).reply_markup;
 
-    // Se tem logos dos dois times, gera imagem VS com timeout de 4s; senão texto puro
-    if (match.home_team_logo_url && match.away_team_logo_url) {
-      const timeout = new Promise<null>(res => setTimeout(() => res(null), 4000));
-      const imageResult = await Promise.race([
-        generateVsImage(
-          match.home_team_logo_url,
-          match.away_team_logo_url,
-          match.home_team,
-          match.away_team,
-        ).catch(() => null),
-        timeout,
-      ]);
-      if (imageResult) {
-        try { await ctx.deleteMessage(); } catch {}
-        await ctx.replyWithPhoto(
-          { source: imageResult, filename: 'match.png' },
-          { caption: poolsText, parse_mode: 'Markdown', reply_markup: poolsMarkup },
-        );
-      } else {
-        await safeEdit(ctx, poolsText, { parse_mode: 'Markdown', reply_markup: poolsMarkup });
-      }
-    } else {
-      await safeEdit(ctx, poolsText, { parse_mode: 'Markdown', reply_markup: poolsMarkup });
-    }
+    await safeEdit(ctx, poolsText, { parse_mode: 'Markdown', reply_markup: poolsMarkup });
   });
 
   // gl_e:{poolId} — detalhe da pool + opções de palpite
