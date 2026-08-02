@@ -85,10 +85,17 @@ async function main() {
   startClosePoolsCron(db, bot);
   startCheckResultsCron(db, sportsData, bot);
 
-  // Verifica conexão com Telegram antes de iniciar polling
   const me = await bot.telegram.getMe();
-  console.log(`🤖 @${me.username} iniciado (long-polling)`);
-  await bot.launch();
+  const webhookDomain = process.env.RENDER_EXTERNAL_URL;
+
+  if (webhookDomain) {
+    const port = parseInt(process.env.PORT ?? '3000', 10);
+    await bot.launch({ webhook: { domain: webhookDomain, port } });
+    console.log(`🤖 @${me.username} iniciado (webhook) — ${webhookDomain} porta ${port}`);
+  } else {
+    await bot.launch();
+    console.log(`🤖 @${me.username} iniciado (long-polling)`);
+  }
 
   process.once('SIGINT', () => bot.stop('SIGINT'));
   process.once('SIGTERM', () => bot.stop('SIGTERM'));
