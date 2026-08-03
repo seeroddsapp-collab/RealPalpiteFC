@@ -4,13 +4,14 @@
 
 Sistema de bolões esportivos (pools de apostas entre usuários) operado via bot de Telegram, com o objetivo final de ser vendido/licenciado como solução **white-label** para empresas de apostas esportivas já autorizadas pela Secretaria de Prêmios e Apostas (SPA) no Brasil.
 
-**Importante — modelo de negócio:** este sistema é o *motor* do bolão (tecnologia), não a operação de apostas em si. Quem detém a outorga, custodia o dinheiro real e responde legalmente pela operação é a empresa licenciada que licencia o produto. Durante a fase de desenvolvimento e testes, o sistema opera **exclusivamente com créditos/pontos virtuais**, nunca dinheiro real, justamente para não configurar operação de apostas sem autorização.
+**Modelo de negócio:** plataforma de bolões esportivos com fluxo financeiro real via PIX — depósito, apostas e saques. Na fase atual, operado pelos fundadores para validação do produto. Futuramente pode ser licenciado como solução white-label para operadoras.
 
 ## 2. Fases do Projeto
 
-1. **MVP interno**: grupo próprio no Telegram, bot promovido a admin, testes com amigos usando pontos virtuais.
+1. **MVP real**: grupo próprio no Telegram, fluxo completo com PIX real entre os fundadores — depósito, apostas, ganhos e saques.
 2. **Validação de fluxo**: ajuste de regras, UX e mensagens com base no uso real.
-3. **Produto comercial (white-label)**: conexão com carteira real de uma operadora licenciada via API/integração, painel administrativo entregue como parte do produto.
+3. **Abertura para usuários**: expansão gradual após validação interna.
+4. **Produto comercial (white-label)**: licenciamento da plataforma para outros operadores via API/integração.
 
 ## 3. Fluxo do Usuário
 
@@ -109,17 +110,18 @@ Princípios:
 
 ## 9. Riscos e Pontos de Atenção
 
-- **Legal**: operar apostas com dinheiro real sem outorga da SPA é ilegal no Brasil. O produto deve permanecer como tecnologia licenciada, nunca como operador direto de apostas com dinheiro real.
+- **Regulatório (futuro)**: escala comercial requer estrutura jurídica adequada. Na fase atual de teste entre fundadores, foco está na validação técnica do produto.
 - **Dependência de API não-oficial (ESPN)**: pode quebrar ou ser bloqueada sem aviso — daí a importância do fallback e do painel de correção manual.
 - **Assimetria de informação**: fechamento 5 min antes do jogo permite que escalações titulares (divulgadas ~1h antes) influenciem palpites tardios — decisão consciente, aceita por ora em favor de mais engajamento.
 
 ## 10. Roadmap
 
-- [ ] Estrutura do monorepo e schema inicial no Supabase
-- [ ] Bot funcional com fluxo completo em pontos virtuais (`/start`, `/entrar`, `/extrato`, `/criarlista`)
-- [ ] Integração com ESPN + football-data.org via adapter
-- [ ] Cron de verificação e resolução automática de listas
-- [ ] Testes com grupo próprio de amigos
-- [ ] Painel admin básico (dashboard + intervenção manual)
-- [ ] Preparação do pitch comercial (métricas de engajamento do teste)
-- [ ] Integração white-label com operadora licenciada
+- [x] Estrutura do monorepo e schema inicial no Supabase
+- [x] Bot funcional com fluxo completo (`/start`, `/entrar`, `/extrato`, `/criarlista`)
+- [x] Integração com ESPN + football-data.org via adapter
+- [x] Cron de verificação e resolução automática de listas
+- [x] Painel admin completo (dashboard + intervenção manual + gestão de usuários/campeonatos)
+- [ ] Fluxo PIX real — depósito via QR Code, saque com aprovação admin, regras de rollover
+- [ ] Testes end-to-end com PIX real entre os fundadores
+- [ ] Abertura para usuários externos
+- [ ] Preparação comercial (métricas, pitch, white-label)

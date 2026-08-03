@@ -194,12 +194,27 @@
 
 ---
 
-## Fase 8 — Preparação Comercial (White-label)
+## Fase 7.5 — Fluxo PIX Real
 
-> Apenas após validação do MVP. Dinheiro real **somente via operadora licenciada pela SPA**.
+> Teste entre os fundadores com dinheiro real — depósito, apostas e saques via PIX.
 
-- [ ] Dashboard de métricas de engajamento para apresentação a potenciais clientes
-- [ ] Definir e documentar contrato de integração com carteira da operadora (interface/API)
-- [ ] Implementar adapter de pagamento real como ponto substituível (sem custódia própria neste repo)
+- [ ] Escolher processador de pagamento (Efí Bank / Asaas / Pagar.me)
+- [ ] Fluxo de depósito no bot: `/depositar` → gera QR Code PIX → webhook confirma → credita saldo
+- [ ] Fluxo de saque no bot: `/sacar` → valida regras → fila de aprovação no admin → PIX out
+- [ ] Regras de rollover: valor mínimo de saque, exigência de aposta mínima antes de sacar
+- [ ] Fila de saques pendentes no painel admin com aprovação manual
+- [ ] Histórico de depósitos e saques por usuário no admin
+- [ ] Testes end-to-end com PIX real entre os fundadores
+- [ ] Atualizar `architecture.json` com fluxo de pagamento
+
+---
+
+## Fase 8 — Crescimento e Preparação Comercial
+
+> Após validação do fluxo real.
+
+- [ ] Dashboard de métricas de engajamento
 - [ ] Configuração de branding por cliente: nome, logo, textos — sem alterar código-fonte
-- [ ] Preparar materiais de pitch comercial com dados reais coletados no MVP
+- [ ] Abertura para usuários externos (convites controlados)
+- [ ] Preparar materiais de pitch comercial com dados reais coletados
+- [ ] White-label: adapter de pagamento configurável por operador
