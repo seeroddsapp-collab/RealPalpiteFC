@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { createAdminClient } from '@/lib/supabase-admin'
 import { fmtBrl } from '@/lib/utils'
+import { StatusBadge } from '@/components/status-badge'
 
 async function getStats() {
   const db = createAdminClient()
@@ -45,33 +46,43 @@ export default async function DashboardPage() {
   const [stats, pools] = await Promise.all([getStats(), getRecentPools()])
 
   const cards = [
-    { label: 'Pools Abertas',      value: String(stats.openPools ?? 0),        color: 'text-green-600' },
-    { label: 'Total de Pools',     value: String(stats.totalPools ?? 0),        color: 'text-blue-600' },
-    { label: 'Usuários',           value: String(stats.totalUsers ?? 0),        color: 'text-purple-600' },
-    { label: 'Arrecadação 7d',     value: fmtBrl(stats.arrecadacao7d),          color: 'text-slate-900' },
-    { label: 'Taxas 30d',          value: fmtBrl(stats.taxas30d),              color: 'text-amber-600' },
+    { label: 'Pools Abertas',  value: String(stats.openPools ?? 0),   accent: true },
+    { label: 'Total de Pools', value: String(stats.totalPools ?? 0),  accent: false },
+    { label: 'Usuários',       value: String(stats.totalUsers ?? 0),  accent: false },
+    { label: 'Arrecadação 7d', value: fmtBrl(stats.arrecadacao7d),    accent: false },
+    { label: 'Taxas 30d',      value: fmtBrl(stats.taxas30d),         accent: false },
   ]
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-slate-900 mb-1">Dashboard</h1>
+      <p className="text-slate-400 text-sm mb-7">Visão geral da operação</p>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {cards.map(c => (
-          <div key={c.label} className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">{c.label}</p>
-            <p className={`text-2xl font-bold mt-1 ${c.color}`}>{c.value}</p>
+          <div key={c.label} className={`rounded-xl p-5 shadow-sm border ${
+            c.accent
+              ? 'bg-navy-900 border-gold-600/30'
+              : 'bg-white border-stone-200'
+          }`}>
+            <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${c.accent ? 'text-gold-500' : 'text-slate-400'}`}>
+              {c.label}
+            </p>
+            <p className={`text-2xl font-bold ${c.accent ? 'text-white' : 'text-slate-800'}`}>
+              {c.value}
+            </p>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-900">Pools Recentes</h2>
+      <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-stone-100 flex items-center gap-2">
+          <div className="w-1 h-5 bg-gold-500 rounded-full" />
+          <h2 className="font-semibold text-slate-800">Pools Recentes</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+            <thead className="bg-stone-50 text-slate-400 text-xs uppercase tracking-wide">
               <tr>
                 <th className="px-6 py-3 text-left">Partida</th>
                 <th className="px-6 py-3 text-left">Modalidade</th>
@@ -79,25 +90,18 @@ export default async function DashboardPage() {
                 <th className="px-6 py-3 text-left">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-stone-100">
               {pools.map(p => {
                 const match = Array.isArray(p.match) ? p.match[0] : p.match
                 return (
-                  <tr key={p.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-3 text-slate-800">
+                  <tr key={p.id} className="hover:bg-stone-50 transition-colors">
+                    <td className="px-6 py-3 text-slate-800 font-medium">
                       {match ? `${match.home_team} × ${match.away_team}` : '—'}
                     </td>
-                    <td className="px-6 py-3 text-slate-600 capitalize">{p.modality.replace(/_/g, ' ')}</td>
-                    <td className="px-6 py-3 text-slate-600">{fmtBrl(p.tier_brl)}</td>
+                    <td className="px-6 py-3 text-slate-500 capitalize">{p.modality.replace(/_/g, ' ')}</td>
+                    <td className="px-6 py-3 text-slate-600 font-mono text-xs">{fmtBrl(p.tier_brl)}</td>
                     <td className="px-6 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        p.status === 'open'      ? 'bg-green-100 text-green-800' :
-                        p.status === 'resolved'  ? 'bg-blue-100 text-blue-800'  :
-                        p.status === 'cancelled' ? 'bg-red-100 text-red-800'    :
-                                                   'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {p.status}
-                      </span>
+                      <StatusBadge status={p.status} />
                     </td>
                   </tr>
                 )

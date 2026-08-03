@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { fmtBrl, fmtDate, MODALITY_LABEL } from '@/lib/utils'
+import { StatusBadge } from '@/components/status-badge'
 
 async function getPools(status?: string) {
   const db = createAdminClient()
@@ -48,17 +49,18 @@ export default async function PoolsPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">Pools</h1>
+      <h1 className="text-2xl font-bold text-slate-900 mb-1">Pools</h1>
+      <p className="text-slate-400 text-sm mb-6">Gerencie e intervenha em listas de palpites</p>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         {tabs.map(t => (
           <Link
             key={t.label}
             href={t.value ? `/dashboard/pools?status=${t.value}` : '/dashboard/pools'}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
               status === t.value
-                ? 'bg-blue-600 text-white'
-                : 'bg-white border border-slate-200 text-slate-600 hover:border-blue-400'
+                ? 'bg-gold-500 text-navy-900'
+                : 'bg-white border border-stone-200 text-slate-500 hover:border-gold-400 hover:text-gold-600'
             }`}
           >
             {t.label}
@@ -66,10 +68,10 @@ export default async function PoolsPage({
         ))}
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+            <thead className="bg-stone-50 text-slate-400 text-xs uppercase tracking-wide">
               <tr>
                 <th className="px-6 py-3 text-left">Partida</th>
                 <th className="px-6 py-3 text-left">Modalidade</th>
@@ -80,41 +82,30 @@ export default async function PoolsPage({
                 <th className="px-6 py-3 text-left">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-stone-100">
               {pools.map(p => {
                 const match = Array.isArray(p.match) ? p.match[0] : p.match
                 const entryCount = counts[p.id] ?? 0
                 const arrecadado = entryCount * p.tier_brl
                 return (
-                  <tr key={p.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-3 text-slate-800">
-                      <div>{match ? `${match.home_team} × ${match.away_team}` : '—'}</div>
+                  <tr key={p.id} className="hover:bg-stone-50 transition-colors">
+                    <td className="px-6 py-3">
+                      <div className="font-medium text-slate-800">{match ? `${match.home_team} × ${match.away_team}` : '—'}</div>
                       {match?.kickoff_at && (
-                        <div className="text-xs text-slate-400">{fmtDate(match.kickoff_at)}</div>
+                        <div className="text-xs text-slate-400 mt-0.5">{fmtDate(match.kickoff_at)}</div>
                       )}
                     </td>
-                    <td className="px-6 py-3 text-slate-700">
-                      {MODALITY_LABEL[p.modality] ?? p.modality}
-                    </td>
-                    <td className="px-6 py-3 text-slate-700 font-medium">{fmtBrl(p.tier_brl)}</td>
-                    <td className="px-6 py-3 text-slate-700">{entryCount}</td>
-                    <td className="px-6 py-3 text-slate-700">{fmtBrl(arrecadado)}</td>
-                    <td className="px-6 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        p.status === 'open'      ? 'bg-green-100 text-green-800' :
-                        p.status === 'resolved'  ? 'bg-blue-100 text-blue-800'  :
-                        p.status === 'cancelled' ? 'bg-red-100 text-red-800'    :
-                                                   'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {p.status}
-                      </span>
-                    </td>
+                    <td className="px-6 py-3 text-slate-600">{MODALITY_LABEL[p.modality] ?? p.modality}</td>
+                    <td className="px-6 py-3 font-mono text-xs font-semibold text-slate-700">{fmtBrl(p.tier_brl)}</td>
+                    <td className="px-6 py-3 text-slate-600">{entryCount}</td>
+                    <td className="px-6 py-3 text-slate-700 font-medium">{fmtBrl(arrecadado)}</td>
+                    <td className="px-6 py-3"><StatusBadge status={p.status} /></td>
                     <td className="px-6 py-3">
                       <Link
                         href={`/dashboard/resultado/${p.id}`}
-                        className="text-blue-600 hover:underline text-xs"
+                        className="text-xs font-semibold text-gold-600 hover:text-gold-500 transition-colors"
                       >
-                        Intervir
+                        Intervir →
                       </Link>
                     </td>
                   </tr>
@@ -122,7 +113,7 @@ export default async function PoolsPage({
               })}
               {pools.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
                     Nenhuma pool encontrada.
                   </td>
                 </tr>

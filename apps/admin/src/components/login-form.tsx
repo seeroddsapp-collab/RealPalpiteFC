@@ -29,33 +29,37 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+        <label className="block text-xs font-semibold text-slate-400 mb-1.5 tracking-wide uppercase">
+          Email
+        </label>
         <input
           type="email"
           required
           value={email}
           onChange={e => setEmail(e.target.value)}
-          className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full bg-navy-900 border border-navy-700 rounded-lg px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
           placeholder="admin@exemplo.com"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Senha</label>
+        <label className="block text-xs font-semibold text-slate-400 mb-1.5 tracking-wide uppercase">
+          Senha
+        </label>
         <input
           type="password"
           required
           value={password}
           onChange={e => setPassword(e.target.value)}
-          className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full bg-navy-900 border border-navy-700 rounded-lg px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
           placeholder="••••••••"
         />
       </div>
 
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+        <p className="text-sm text-red-400 bg-red-900/20 border border-red-800/50 rounded-lg px-4 py-3">
           {error}
         </p>
       )}
@@ -63,7 +67,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2 px-4 rounded-md text-sm transition-colors"
+        className="w-full bg-gold-500 hover:bg-gold-400 disabled:opacity-50 text-navy-900 font-bold py-3 px-4 rounded-lg text-sm tracking-wide transition-colors shadow-lg shadow-gold-500/20"
       >
         {loading ? 'Entrando...' : 'Entrar'}
       </button>
