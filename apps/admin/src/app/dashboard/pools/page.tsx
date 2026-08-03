@@ -4,19 +4,37 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { fmtBrl, fmtDate, MODALITY_LABEL } from '@/lib/utils'
 import { StatusBadge } from '@/components/status-badge'
+import { Pagination } from '@/components/pagination'
+import { SearchBar } from '@/components/search-bar'
 
-async function getPools(status?: string) {
+const PAGE_SIZE = 50
+
+async function getPools(page: number, status?: string, q?: string) {
   const db = createAdminClient()
+  const from = (page - 1) * PAGE_SIZE
+  const to = from + PAGE_SIZE - 1
+
+  let matchIds: string[] | null = null
+  if (q) {
+    const { data } = await db
+      .from('matches')
+      .select('id')
+      .or(`home_team.ilike.%${q}%,away_team.ilike.%${q}%`)
+    matchIds = (data ?? []).map(m => m.id)
+    if (matchIds.length === 0) return { pools: [], total: 0 }
+  }
+
   let query = db
     .from('pools')
-    .select('id, modality, tier_brl, status, created_at, match:matches(id, home_team, away_team, kickoff_at)')
+    .select('id, modality, tier_brl, status, created_at, match:matches(id, home_team, away_team, kickoff_at)', { count: 'exact' })
     .order('created_at', { ascending: false })
-    .limit(100)
+    .range(from, to)
 
   if (status) query = query.eq('status', status)
+  if (matchIds) query = query.in('match_id', matchIds)
 
-  const { data } = await query
-  return data ?? []
+  const { data, count } = await query
+  return { pools: data ?? [], total: count ?? 0 }
 }
 
 async function getEntryCounts(poolIds: string[]) {
@@ -33,30 +51,51 @@ async function getEntryCounts(poolIds: string[]) {
 export default async function PoolsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>
+  searchParams: Promise<{ status?: string; page?: string; q?: string }>
 }) {
-  const { status } = await searchParams
-  const pools = await getPools(status)
+  const { status, page: pageStr, q } = await searchParams
+  const page = Math.max(1, parseInt(pageStr ?? '1'))
+  const { pools, total } = await getPools(page, status, q)
   const counts = await getEntryCounts(pools.map(p => p.id))
 
   const tabs = [
-    { label: 'Todas',     value: undefined },
-    { label: 'Abertas',   value: 'open' },
-    { label: 'Fechadas',  value: 'closed' },
-    { label: 'Resolvidas',value: 'resolved' },
-    { label: 'Canceladas',value: 'cancelled' },
+    { label: 'Todas',      value: undefined },
+    { label: 'Abertas',    value: 'open' },
+    { label: 'Fechadas',   value: 'closed' },
+    { label: 'Resolvidas', value: 'resolved' },
+    { label: 'Canceladas', value: 'cancelled' },
   ]
+
+  function buildUrl(p: number) {
+    const params = new URLSearchParams()
+    if (status) params.set('status', status)
+    if (q) params.set('q', q)
+    params.set('page', String(p))
+    return `/dashboard/pools?${params.toString()}`
+  }
+
+  function tabUrl(s: string | undefined) {
+    const params = new URLSearchParams()
+    if (s) params.set('status', s)
+    if (q) params.set('q', q)
+    return `/dashboard/pools?${params.toString()}`
+  }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-1">Pools</h1>
-      <p className="text-slate-400 text-sm mb-6">Gerencie e intervenha em listas de palpites</p>
+      <div className="flex items-end justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">Pools</h1>
+          <p className="text-slate-400 text-sm">{total} pool{total !== 1 ? 's' : ''} encontrada{total !== 1 ? 's' : ''}</p>
+        </div>
+        <SearchBar placeholder="Buscar por time..." defaultValue={q} />
+      </div>
 
       <div className="flex gap-2 mb-6 flex-wrap">
         {tabs.map(t => (
           <Link
             key={t.label}
-            href={t.value ? `/dashboard/pools?status=${t.value}` : '/dashboard/pools'}
+            href={tabUrl(t.value)}
             className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
               status === t.value
                 ? 'bg-gold-500 text-navy-900'
@@ -121,6 +160,7 @@ export default async function PoolsPage({
             </tbody>
           </table>
         </div>
+        <Pagination page={page} total={total} pageSize={PAGE_SIZE} buildUrl={buildUrl} />
       </div>
     </div>
   )
