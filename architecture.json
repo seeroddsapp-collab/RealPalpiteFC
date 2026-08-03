@@ -5,9 +5,11 @@
   "supabase_url": "https://rczxqhvtqnpbtvzkjpml.supabase.co",
   "credentials_location": "Credenciais (ANON KEY, SERVICE ROLE) ficam exclusivamente nos arquivos .env de cada app. Nunca em código, nunca em documentação.",
   "description": "Motor de bolões esportivos via bot de Telegram, com painel administrativo, para licenciamento white-label a operadoras de apostas licenciadas pela SPA (Brasil).",
-  "legal_constraint": {
-    "rule": "O sistema NUNCA deve processar dinheiro real diretamente. Apenas créditos/pontos virtuais durante desenvolvimento e testes. Integração com dinheiro real só ocorre via carteira de operadora licenciada, na versão white-label.",
-    "do_not": "Não implementar gateway de pagamento, PIX, cartão ou qualquer custódia de dinheiro real dentro deste repositório sem revisão explícita."
+  "payment_policy": {
+    "current_phase": "teste_real_privado",
+    "note": "Fase de teste real entre os fundadores do projeto — PIX de entrada e saída habilitado. Decisão explícita do responsável pelo projeto em 2026-08-03.",
+    "credentials_rule": "Chaves de API do processador de pagamento (Efí/Asaas/etc) ficam exclusivamente no .env — nunca em código ou documentação.",
+    "future": "Para escala comercial, integração com operadora licenciada pela SPA conforme Lei 14.790/2023."
   },
   "monorepo_structure": {
     "apps/bot": {
