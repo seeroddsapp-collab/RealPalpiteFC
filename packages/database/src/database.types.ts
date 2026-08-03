@@ -14,6 +14,8 @@ export type Database = {
           username: string | null;
           virtual_balance: number;
           is_blocked: boolean;
+          pix_key: string | null;
+          pix_key_type: 'cpf' | 'phone' | 'email' | 'random_key' | null;
           created_at: string;
         };
         Insert: {
@@ -22,6 +24,8 @@ export type Database = {
           username?: string | null;
           virtual_balance?: number;
           is_blocked?: boolean;
+          pix_key?: string | null;
+          pix_key_type?: 'cpf' | 'phone' | 'email' | 'random_key' | null;
           created_at?: string;
         };
         Update: {
@@ -30,6 +34,8 @@ export type Database = {
           username?: string | null;
           virtual_balance?: number;
           is_blocked?: boolean;
+          pix_key?: string | null;
+          pix_key_type?: 'cpf' | 'phone' | 'email' | 'random_key' | null;
           created_at?: string;
         };
         Relationships: [];
@@ -229,7 +235,7 @@ export type Database = {
         Row: {
           id: string;
           user_id: string;
-          type: 'entry' | 'prize' | 'refund' | 'bonus';
+          type: 'entry' | 'prize' | 'refund' | 'bonus' | 'deposit' | 'withdrawal';
           amount: number;
           balance_after: number;
           pool_id: string | null;
@@ -239,7 +245,7 @@ export type Database = {
         Insert: {
           id?: string;
           user_id: string;
-          type: 'entry' | 'prize' | 'refund' | 'bonus';
+          type: 'entry' | 'prize' | 'refund' | 'bonus' | 'deposit' | 'withdrawal';
           amount: number;
           balance_after: number;
           pool_id?: string | null;
@@ -249,7 +255,7 @@ export type Database = {
         Update: {
           id?: string;
           user_id?: string;
-          type?: 'entry' | 'prize' | 'refund' | 'bonus';
+          type?: 'entry' | 'prize' | 'refund' | 'bonus' | 'deposit' | 'withdrawal';
           amount?: number;
           balance_after?: number;
           pool_id?: string | null;
@@ -269,6 +275,100 @@ export type Database = {
             columns: ['pool_id'];
             isOneToOne: false;
             referencedRelation: 'pools';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      pix_deposits: {
+        Row: {
+          id: string;
+          user_id: string;
+          amount: number;
+          mp_payment_id: string | null;
+          qr_code: string | null;
+          qr_code_base64: string | null;
+          status: 'pending' | 'confirmed' | 'expired' | 'cancelled';
+          expires_at: string;
+          confirmed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          amount: number;
+          mp_payment_id?: string | null;
+          qr_code?: string | null;
+          qr_code_base64?: string | null;
+          status?: 'pending' | 'confirmed' | 'expired' | 'cancelled';
+          expires_at: string;
+          confirmed_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          amount?: number;
+          mp_payment_id?: string | null;
+          qr_code?: string | null;
+          qr_code_base64?: string | null;
+          status?: 'pending' | 'confirmed' | 'expired' | 'cancelled';
+          expires_at?: string;
+          confirmed_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pix_deposits_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      pix_withdrawals: {
+        Row: {
+          id: string;
+          user_id: string;
+          amount: number;
+          pix_key: string;
+          pix_key_type: 'cpf' | 'phone' | 'email' | 'random_key';
+          mp_transfer_id: string | null;
+          status: 'processing' | 'completed' | 'failed';
+          completed_at: string | null;
+          failure_reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          amount: number;
+          pix_key: string;
+          pix_key_type: 'cpf' | 'phone' | 'email' | 'random_key';
+          mp_transfer_id?: string | null;
+          status?: 'processing' | 'completed' | 'failed';
+          completed_at?: string | null;
+          failure_reason?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          amount?: number;
+          pix_key?: string;
+          pix_key_type?: 'cpf' | 'phone' | 'email' | 'random_key';
+          mp_transfer_id?: string | null;
+          status?: 'processing' | 'completed' | 'failed';
+          completed_at?: string | null;
+          failure_reason?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pix_withdrawals_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
             referencedColumns: ['id'];
           },
         ];
@@ -348,3 +448,7 @@ export type PoolInsert = Database['public']['Tables']['pools']['Insert'];
 export type EntryInsert = Database['public']['Tables']['entries']['Insert'];
 export type TransactionInsert = Database['public']['Tables']['transactions']['Insert'];
 export type AuditLogInsert = Database['public']['Tables']['audit_log']['Insert'];
+export type PixDepositRow = Database['public']['Tables']['pix_deposits']['Row'];
+export type PixDepositInsert = Database['public']['Tables']['pix_deposits']['Insert'];
+export type PixWithdrawalRow = Database['public']['Tables']['pix_withdrawals']['Row'];
+export type PixWithdrawalInsert = Database['public']['Tables']['pix_withdrawals']['Insert'];

@@ -193,12 +193,16 @@ export function msgExtrato(balance: number, txs: TransactionRow[]): string {
     prize: '🏆',
     refund: '↩️',
     bonus: '🎁',
+    deposit: '📥',
+    withdrawal: '💸',
   };
   const labels: Record<TransactionRow['type'], string> = {
     entry: 'Entrada',
     prize: 'Premio',
     refund: 'Devolucao',
     bonus: 'Bonus',
+    deposit: 'Deposito',
+    withdrawal: 'Saque',
   };
 
   if (txs.length === 0) {
@@ -207,7 +211,8 @@ export function msgExtrato(balance: number, txs: TransactionRow[]): string {
 
   const lines = txs
     .map(tx => {
-      const sign = tx.type === 'entry' ? '-' : '+';
+      const isDebit = tx.type === 'entry' || tx.type === 'withdrawal';
+      const sign = isDebit ? '-' : '+';
       return `${icons[tx.type]} ${labels[tx.type]}: ${sign}${fmtBrl(tx.amount)} > ${fmtBrl(tx.balance_after)}\n_${tx.description}_`;
     })
     .join('\n\n');

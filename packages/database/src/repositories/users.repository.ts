@@ -80,4 +80,17 @@ export class UsersRepository {
 
     if (error) throw error;
   }
+
+  async updatePixKey(
+    userId: string,
+    pixKey: string,
+    pixKeyType: 'cpf' | 'phone' | 'email' | 'random_key',
+  ): Promise<void> {
+    const { error } = await this.db
+      .from('users')
+      .update({ pix_key: pixKey, pix_key_type: pixKeyType })
+      .eq('id', userId);
+
+    if (error) throw error;
+  }
 }

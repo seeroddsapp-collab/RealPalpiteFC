@@ -8,9 +8,9 @@
 ## Status atual
 
 - **Última sessão:** 2026-08-03
-- **Fase concluída:** Fase 6 — apps/admin (painel administrativo completo no ar em rpfc-admin.vercel.app; design navy/gold; paginação, busca, páginas Partidas/Entradas/Audit/Detalhe de usuário implementadas)
-- **Próximo passo:** Fase 7 — Testes MVP (adicionar bot ao grupo do Telegram e validar fluxo completo com partidas reais)
-- **Gaps conhecidos (pós-admin):** dashboard sem gráfico de arrecadação; sem trigger manual de sync no admin; saldo inicial do usuário = 0 (sem mecanismo de depósito por ora); comandos `/saldo` e `/meus_palpites` não implementados no bot
+- **Fase concluída:** Fase 7.5 — Fluxo PIX Real (infraestrutura completa implementada; aguardando credenciais MP_ACCESS_TOKEN para ativar)
+- **Próximo passo:** Inserir MP_ACCESS_TOKEN no .env do bot (Render) + configurar URL do webhook PIX no painel MP → testar depósito real
+- **Gaps conhecidos:** dashboard sem gráfico de arrecadação; sem trigger manual de sync; comandos `/saldo` e `/meus_palpites` ainda não implementados
 
 ---
 
@@ -198,14 +198,23 @@
 
 > Teste entre os fundadores com dinheiro real — depósito, apostas e saques via PIX.
 
-- [ ] Escolher processador de pagamento (Efí Bank / Asaas / Pagar.me)
-- [ ] Fluxo de depósito no bot: `/depositar` → gera QR Code PIX → webhook confirma → credita saldo
-- [ ] Fluxo de saque no bot: `/sacar` → valida regras → fila de aprovação no admin → PIX out
-- [ ] Regras de rollover: valor mínimo de saque, exigência de aposta mínima antes de sacar
-- [ ] Fila de saques pendentes no painel admin com aprovação manual
-- [ ] Histórico de depósitos e saques por usuário no admin
+- [x] Processador: Mercado Pago (MP_ACCESS_TOKEN)
+- [x] Migration SQL: `pix_deposits`, `pix_withdrawals`, `pix_key` em users, tipos `deposit`/`withdrawal` em transactions
+- [x] `packages/database`: `PixDepositsRepository`, `PixWithdrawalsRepository`, `updatePixKey` em UsersRepository
+- [x] `MercadoPagoService`: `createPixDeposit`, `getPayment`, `sendPix` (PIX out)
+- [x] Cena `/depositar`: wizard 2 passos — valor → QR Code gerado + copia-e-cola (expira 30 min)
+- [x] Cena `/sacar`: wizard com check de lock 24h, saldo, limite diário R$500, registro/confirmação de chave PIX
+- [x] Estorno automático do saldo se a transferência MP falhar
+- [x] Comando `/carteira`: saldo + total depositado/sacado + botões Depositar/Sacar
+- [x] Webhook `POST /pix/webhook`: confirma pagamento MP → credita saldo → notifica usuário via Telegram
+- [x] `/extrato`: ícones e labels para `deposit` e `withdrawal` adicionados
+- [x] Admin `/dashboard/financeiro`: stats (total depositado, sacado, líquido) + tabelas de depósitos e saques com paginação
+- [x] Nav admin: item "Financeiro" com ícone Wallet
+- [x] `.env.example` atualizado com `MP_ACCESS_TOKEN`
+- [ ] **PENDENTE:** Inserir `MP_ACCESS_TOKEN` no .env do bot (Render)
+- [ ] **PENDENTE:** Configurar URL do webhook PIX no painel MP: `URL_DO_BOT/pix/webhook`
+- [ ] Aplicar migration no Supabase: `supabase db push` ou executar direto no SQL Editor
 - [ ] Testes end-to-end com PIX real entre os fundadores
-- [ ] Atualizar `architecture.json` com fluxo de pagamento
 
 ---
 

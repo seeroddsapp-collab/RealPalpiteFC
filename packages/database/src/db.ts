@@ -6,6 +6,8 @@ import { PoolsRepository } from './repositories/pools.repository';
 import { EntriesRepository } from './repositories/entries.repository';
 import { TransactionsRepository } from './repositories/transactions.repository';
 import { AuditRepository } from './repositories/audit.repository';
+import { PixDepositsRepository } from './repositories/pix-deposits.repository';
+import { PixWithdrawalsRepository } from './repositories/pix-withdrawals.repository';
 
 // Ponto de entrada principal do pacote.
 // O bot instancia com SERVICE_ROLE_KEY (bypassa RLS).
@@ -18,6 +20,8 @@ export class Db {
   readonly entries: EntriesRepository;
   readonly transactions: TransactionsRepository;
   readonly audit: AuditRepository;
+  readonly pixDeposits: PixDepositsRepository;
+  readonly pixWithdrawals: PixWithdrawalsRepository;
 
   constructor(supabaseUrl: string, supabaseKey: string) {
     const client = createClient(supabaseUrl, supabaseKey);
@@ -28,5 +32,7 @@ export class Db {
     this.entries = new EntriesRepository(client);
     this.transactions = new TransactionsRepository(client);
     this.audit = new AuditRepository(client);
+    this.pixDeposits = new PixDepositsRepository(client);
+    this.pixWithdrawals = new PixWithdrawalsRepository(client);
   }
 }
