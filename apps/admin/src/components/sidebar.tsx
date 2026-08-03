@@ -1,15 +1,7 @@
 import Image from 'next/image'
 import logo from '@/imagens/logorp.png'
-import { LayoutDashboard, Layers, Users, Trophy } from 'lucide-react'
-import { NavItem } from './nav-item'
+import { NavList } from './nav-item'
 import { LogoutButton } from './logout-button'
-
-const NAV = [
-  { href: '/dashboard',             label: 'Dashboard',   Icon: LayoutDashboard },
-  { href: '/dashboard/pools',       label: 'Pools',       Icon: Layers },
-  { href: '/dashboard/usuarios',    label: 'Usuários',    Icon: Users },
-  { href: '/dashboard/campeonatos', label: 'Campeonatos', Icon: Trophy },
-]
 
 export function Sidebar() {
   return (
@@ -25,9 +17,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
-        {NAV.map(item => (
-          <NavItem key={item.href} {...item} />
-        ))}
+        <NavList />
       </nav>
 
       {/* Logout */}
