@@ -93,9 +93,59 @@
     },
     "apps/admin": {
       "hosted_on": "Vercel",
-      "framework": "Next.js",
+      "url": "https://rpfc-admin.vercel.app",
+      "framework": "Next.js 15 App Router + Tailwind CSS v3",
       "responsibility": "Painel administrativo: dashboards, histórico, intervenção manual em resultados, gestão de usuários e campeonatos.",
-      "must_not": "Duplicar lógica de negócio já existente em packages/core."
+      "must_not": "Duplicar lógica de negócio já existente em packages/core.",
+      "auth": "Supabase Auth via @supabase/ssr — qualquer usuário autenticado no Supabase Auth = admin. Sem auto-registro. Criar contas manualmente em Supabase Dashboard → Authentication → Users.",
+      "env_vars": [
+        "NEXT_PUBLIC_SUPABASE_URL (mesmo valor que SUPABASE_URL do bot)",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY (mesmo valor que SUPABASE_ANON_KEY do bot)",
+        "SUPABASE_SERVICE_ROLE_KEY (bypassa RLS — usado pelo createAdminClient)"
+      ],
+      "design_system": {
+        "palette": "navy-900 (#0D0F1A) sidebar/cards escuros; gold-500 (#C9A84C) acentos, ativo, botões primários; stone/slate para fundos claros e textos",
+        "logo": "apps/admin/src/imagens/logorp.png — escudo premium navy+gold, usado na sidebar e página de login",
+        "icons": "lucide-react (SVG, tree-shakeable) — sem emojis na UI"
+      },
+      "routes": {
+        "/login": "Página pública de login com logo, form email/senha via Supabase Auth",
+        "/dashboard": "Cards de KPIs (pools abertas, total pools, usuários, arrecadação 7d, taxas 30d) + tabela pools recentes",
+        "/dashboard/pools": "Lista paginada (50/pág) de pools com filtro por status, busca por time, nº entradas, arrecadado, link Intervir",
+        "/dashboard/partidas": "Lista paginada de partidas sincronizadas com filtro status, busca time, resultado, campeonato",
+        "/dashboard/entradas": "Lista paginada de todos os palpites: usuário, partida, modalidade, palpite, valor, ganhou/perdeu",
+        "/dashboard/usuarios": "Lista paginada com busca, saldo, nº palpites, bloquear/desbloquear, link detalhe",
+        "/dashboard/usuarios/[id]": "Detalhe: stats (vitórias/derrotas/saldo), últimos 50 palpites, últimas 20 transações",
+        "/dashboard/campeonatos": "Lista com contagem de partidas, edição de ESPN code, ativar/desativar",
+        "/dashboard/audit": "Histórico paginado de intervenções de resultado",
+        "/dashboard/resultado/[poolId]": "Formulário de intervenção: placar casa/fora + motivo → grava em audit_log + atualiza matches.result"
+      },
+      "key_files": {
+        "src/lib/supabase-admin.ts": "createAdminClient() com SERVICE_ROLE_KEY — usado em todas as queries de dados do servidor",
+        "src/lib/supabase-server.ts": "createSupabaseServer() para verificar sessão do admin autenticado",
+        "src/lib/supabase-browser.ts": "createSupabaseBrowser() para o LoginForm (client component)",
+        "src/middleware.ts": "Protege todas as rotas exceto /login; redireciona não-autenticados",
+        "src/actions/admin.ts": "Server Actions: toggleUserBlocked, toggleChampionshipActive, updateChampionshipCodes, overrideResult",
+        "src/actions/auth.ts": "Server Action: signOut",
+        "src/components/sidebar.tsx": "Layout fixo lateral: logo, NavList, LogoutButton",
+        "src/components/nav-item.tsx": "Client component com usePathname para estado ativo; define array NAV com ícones lucide",
+        "src/components/pagination.tsx": "Componente de paginação por URL (page param); recebe buildUrl(page) como prop",
+        "src/components/search-bar.tsx": "Client component: input com useRouter para atualizar URL com ?q=",
+        "src/components/status-badge.tsx": "Badge semântico: open=verde, closed=âmbar, resolved=azul, cancelled=vermelho",
+        "src/imagens/logorp.png": "Logo do produto — escudo premium navy+gold"
+      },
+      "patterns": {
+        "data_fetching": "Server Components com async/await direto + createAdminClient(). Sem SWR ou React Query.",
+        "pagination": "URL param ?page=N + Supabase .range(from, to) + { count: 'exact' }. Componente Pagination recebe buildUrl().",
+        "search": "URL param ?q=termo + .ilike() ou subquery de IDs. SearchBar usa useRouter para navegar.",
+        "force_dynamic": "export const dynamic = 'force-dynamic' em todas as páginas para evitar falha de prerender no build",
+        "server_client_boundary": "Ícones/componentes com lógica de rota devem ser Client Components. Não passar funções (ex: componentes React) como props de Server para Client."
+      },
+      "deployment_notes": {
+        "repo_visibility": "Repositório público no GitHub (necessário para Vercel Hobby plan funcionar com org repo)",
+        "vercel_hobby_restriction": "Hobby plan bloqueia deploys de repos privados de organizações. Solução: repo público.",
+        "no_co_author": "Nunca adicionar Co-Authored-By nos commits — Vercel Hobby bloqueia deploys de co-authors não membros do time"
+      }
     },
     "packages/core": {
       "responsibility": "Regras de negócio puras. Sem dependência de Telegram, Next.js ou qualquer framework de interface.",
@@ -223,7 +273,7 @@
     "fase_3_sports_data": "concluida",
     "fase_4_database": "concluida",
     "fase_5_bot": "concluida",
-    "fase_6_admin": "pendente",
+    "fase_6_admin": "concluida",
     "fase_7_testes_mvp": "pendente",
     "fase_8_whitelabel": "pendente"
   },

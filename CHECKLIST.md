@@ -8,8 +8,9 @@
 ## Status atual
 
 - **Última sessão:** 2026-08-03
-- **Fase concluída:** Fase 5 — apps/bot (completo; bot em produção no Render com webhook + UptimeRobot; navegação tier-first implementada; pools globais expandidas para todos os tiers por modalidade)
+- **Fase concluída:** Fase 6 — apps/admin (painel administrativo completo no ar em rpfc-admin.vercel.app; design navy/gold; paginação, busca, páginas Partidas/Entradas/Audit/Detalhe de usuário implementadas)
 - **Próximo passo:** Fase 7 — Testes MVP (adicionar bot ao grupo do Telegram e validar fluxo completo com partidas reais)
+- **Gaps conhecidos (pós-admin):** dashboard sem gráfico de arrecadação; sem trigger manual de sync no admin; saldo inicial do usuário = 0 (sem mecanismo de depósito por ora); comandos `/saldo` e `/meus_palpites` não implementados no bot
 
 ---
 
@@ -156,15 +157,26 @@
 
 > Hospedado na Vercel. Next.js + Supabase Auth. **Não duplica lógica do `packages/core`.**
 
-- [ ] Setup Next.js + Supabase Auth com acesso restrito a administradores
-- [ ] Layout base: sidebar de navegação + header com sessão do admin
-- [ ] Dashboard: pools ativos com arrecadação total e participantes em tempo real
-- [ ] Dashboard: histórico de pools resolvidos — ganhadores, prêmios pagos, taxas retidas
-- [ ] Métricas de receita: taxas por período com filtros de data e campeonato
-- [ ] Intervenção em resultado: formulário com campos obrigatórios + gravação no `audit_log`
-- [ ] Gestão de usuários: saldo atual, histórico de transações, bloquear/desbloquear
-- [ ] Gestão de campeonatos/modalidades/tiers: CRUD completo sem alterar código-fonte
-- [ ] Deploy na Vercel + atualizar `architecture.json`
+- [x] Setup Next.js 15 App Router + Supabase Auth (SSR via `@supabase/ssr`) com acesso restrito a administradores
+- [x] Middleware de autenticação: redireciona `/` e rotas protegidas para `/login` se não autenticado
+- [x] Layout base: sidebar com logo, ícones SVG (lucide-react), estado ativo por rota, logout; design navy/gold
+- [x] Dashboard: cards de Pools Abertas, Total de Pools, Usuários, Arrecadação 7d, Taxas 30d + tabela de pools recentes
+- [x] Pools: lista paginada (50/página) com filtro por status, busca por time, contagem de entradas, arrecadado por pool, link "Intervir"
+- [x] Partidas: lista paginada de todas as partidas sincronizadas com filtro por status, busca, campeonato, resultado e kickoff
+- [x] Entradas: lista paginada de todos os palpites com usuário, partida, modalidade, palpite, valor e resultado (ganhou/perdeu)
+- [x] Usuários: lista paginada com busca por @username, saldo, nº de palpites, bloquear/desbloquear; link para detalhe
+- [x] Detalhe do usuário: stats (saldo, total palpites, vitórias, derrotas) + histórico de palpites + extrato de transações
+- [x] Campeonatos: lista com contagem de partidas por liga, edição de ESPN code, ativar/desativar
+- [x] Intervenção em resultado (`/dashboard/resultado/[poolId]`): formulário com placar + motivo, gravação no `audit_log`
+- [x] Audit Log: histórico paginado de todas as intervenções de resultado
+- [x] Identidade visual: paleta navy (`#0D0F1A`) + gold (`#C9A84C`) derivada do logo `logorp.png`
+- [x] Componentes reutilizáveis: `StatusBadge`, `Pagination`, `SearchBar`, `NavItem`
+- [x] `createAdminClient` com `SERVICE_ROLE_KEY` para queries sem restrição de RLS
+- [x] `export const dynamic = 'force-dynamic'` em todas as páginas (evita falha de prerender)
+- [x] Deploy na Vercel (rpfc-admin.vercel.app) — repositório público para contornar restrição Hobby plan
+- [x] Vars de ambiente na Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- [ ] Dashboard: gráfico de arrecadação por dia (últimos 7/30 dias) — pendente
+- [ ] Admin: trigger manual de sincronização de partidas/resultados — pendente
 
 ---
 
