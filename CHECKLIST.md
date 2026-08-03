@@ -7,9 +7,9 @@
 
 ## Status atual
 
-- **Última sessão:** 2026-08-02
-- **Fase concluída:** Fase 5 — apps/bot (completo, incluindo fluxos de pool privada, notificações de fechamento, multi-threshold Total de Gols e formatters atualizados)
-- **Próximo passo:** Fase 6 — apps/admin (painel administrativo Next.js) **ou** testar o bot com token real do BotFather
+- **Última sessão:** 2026-08-03
+- **Fase concluída:** Fase 5 — apps/bot (completo; bot em produção no Render com webhook + UptimeRobot; navegação tier-first implementada; pools globais expandidas para todos os tiers por modalidade)
+- **Próximo passo:** Fase 7 — Testes MVP (adicionar bot ao grupo do Telegram e validar fluxo completo com partidas reais)
 
 ---
 
@@ -113,9 +113,9 @@
 - [x] Tratamento de erros com mensagens amigáveis (sem stack traces expostos ao usuário)
 - [x] Variáveis de ambiente documentadas para deploy no Render
 - [x] Build TypeScript limpo (zero erros)
-- [x] Imagens de partida geradas via template PNG personalizado (vs-template.png + campeonato-template.png)
-- [x] Logo de campeonato buscado da ESPN e armazenado em `championships.logo_url`
-- [x] Imagem de campeonato gerada ao navegar para partidas (campeonato-template.png + sharp)
+- [x] ~~Imagens de partida geradas via template PNG~~ — removido (ECONNRESET no Render free tier 0.1 CPU; sharp muito pesado); bot opera só com texto por enquanto
+- [x] Logo de campeonato buscado da ESPN e armazenado em `championships.logo_url` (sync automático)
+- [x] Logo do bot configurado no BotFather (640×360 px)
 - [x] Validação de limite de 2 entradas por bolão — alerta visível ao usuário (answerCbQuery fix)
 - [x] **Minhas Entradas** completo:
   - [x] Menu com Ativas / Finalizadas Recentes / Histórico / Gestão de Banca
@@ -144,8 +144,11 @@
   - [x] `parsePrediction`, `evaluatePrediction`, `decodePred`, `fmtPredFromDb` e `resolution.service` atualizados
   - [x] Testes unitários atualizados (8 casos de total_de_gols cobrindo todos os thresholds)
   - [x] Build e type-check limpos (`pnpm --filter @realpalpitefc/core build && tsc --noEmit`)
-- [ ] Deploy no Render + configurar TELEGRAM_BOT_TOKEN via BotFather
-- [ ] Atualizar `architecture.json` com comandos, fluxos e crons implementados
+- [x] Deploy no Render (Web Service free tier) — webhook mode via `RENDER_EXTERNAL_URL`; UptimeRobot pinga `/health` a cada 5min para manter serviço acordado
+- [x] BotFather configurado: descrição, texto sobre, foto de perfil (logo 640×360)
+- [x] **Navegação tier-first:** `gl_p:{matchId}` mostra botões de valor (R$5/10/25/50) → `gl_tier:{matchId}:{tier}` lista modalidades do tier escolhido
+- [x] **Pools completas por partida:** sync cria 13 pools por partida (todos os tiers × todas as modalidades); auto-cria pools faltantes nas partidas já existentes na próxima sincronização
+- [x] Atualizar `architecture.json` com comandos, fluxos e crons implementados
 
 ---
 

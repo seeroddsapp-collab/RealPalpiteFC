@@ -16,8 +16,16 @@
       "must_not": "Conter lógica de cálculo de prêmio/taxa diretamente. Deve sempre delegar para packages/core.",
       "framework": "Telegraf v4 + TypeScript + CommonJS",
       "entry_point": "src/index.ts",
-      "mode": "long-polling (dev); webhook em produção no Render",
-      "env_vars": ["TELEGRAM_BOT_TOKEN", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "FOOTBALL_DATA_API_KEY"],
+      "mode": "long-polling (dev, sem RENDER_EXTERNAL_URL); webhook em produção — detectado via RENDER_EXTERNAL_URL auto-set pelo Render",
+      "health_check": "GET /health → 200 OK — usado pelo UptimeRobot (ping a cada 5min) para manter o free tier acordado",
+      "env_vars": [
+        "TELEGRAM_BOT_TOKEN",
+        "SUPABASE_URL",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "FOOTBALL_DATA_API_KEY",
+        "RENDER_EXTERNAL_URL (auto-set pelo Render em produção — activa modo webhook)",
+        "PORT (auto-set pelo Render, padrão 3000)"
+      ],
       "implemented_files": [
         "src/context.ts",
         "src/index.ts",
@@ -36,9 +44,8 @@
         "src/cron/check-results.cron.ts",
         "src/formatters/messages.ts",
         "src/keyboards/keyboards.ts",
-        "src/utils/match-image.ts",
-        "src/assets/vs-template.png",
-        "src/assets/campeonato-template.png"
+        "src/assets/logo.png",
+        "src/assets/logo-640x360.png"
       ],
       "session_type": "BotSession extends WizardSession<WizardSessionData> — user e createPool ficam no nível raiz; __scenes gerenciado pelo Telegraf Scenes",
       "commands": {
@@ -50,8 +57,9 @@
       "callback_scheme": {
         "menu": "menu principal",
         "gl_ch": "lista de campeonatos",
-        "gl_m:{champId}": "partidas de um campeonato (envia foto de campeonato se logo_url disponível)",
-        "gl_p:{matchId}": "pools abertas de uma partida (envia foto VS com escudos dos times)",
+        "gl_m:{champId}": "partidas de um campeonato (próximos 21 dias)",
+        "gl_p:{matchId}": "tela de seleção de tier — mostra botões R$5/10/25/50 com os valores disponíveis para a partida",
+        "gl_tier:{matchId}:{tier}": "pools abertas da partida filtradas pelo tier escolhido; mostra modalidades disponíveis",
         "gl_e:{poolId}": "detalhe de uma pool + keyboard de palpite",
         "gl_pr:{poolId}:{pred}": "tela de confirmação do palpite",
         "gl_ok:{poolId}:{pred}": "confirma e processa a entrada",
@@ -68,9 +76,9 @@
         "cp": "entra na cena de criação de lista"
       },
       "image_generation": {
-        "vs_image": "match-image.ts: carrega vs-template.png (1536×1024), compõe escudos dos times em posições fixas (fração de dimensão), adiciona nomes via SVG overlay, redimensiona para 900px. Fallback para SVG puro se template ausente.",
-        "championship_image": "match-image.ts: carrega campeonato-template.png (1536×1024), compõe logo do campeonato no centro, redimensiona para 900px. Fallback para SVG puro se template ausente.",
-        "logo_source": "ESPN API: site.api.espn.com/apis/site/v2/sports/soccer/{leagueCode}/scoreboard retorna leagues[].logos[]. Armazenado em championships.logo_url após primeiro sync."
+        "status": "REMOVIDO da produção — sharp (processamento PNG) causava ECONNRESET no Render free tier (0.1 CPU); bot opera só com texto por enquanto",
+        "logo_source": "ESPN API: site.api.espn.com/apis/site/v2/sports/soccer/{leagueCode}/scoreboard retorna leagues[].logos[]. Armazenado em championships.logo_url após primeiro sync (não exibido no bot atualmente).",
+        "future": "Reimplementar como job assíncrono separado ou usar serviço de geração de imagem externo quando o plano do Render for upgradeado"
       },
       "prediction_encoding": {
         "dupla_chance_resultado": "callback: h=home, d=draw, a=away | DB: 'home' | 'draw' | 'away'",
@@ -268,10 +276,13 @@
     "list_type_global": {
       "value_tiers_brl": {
         "dupla_chance_resultado": [5, 10, 25],
+        "dupla_chance": [5, 10, 25],
         "total_de_gols": [5, 10, 25, 50],
         "placar_exato": [10, 25, 50]
       },
-      "rationale": "Tiers variam por dificuldade da modalidade: modalidades mais fáceis não têm tier alto (R$50), modalidade mais difícil não tem tier baixo (R$5)."
+      "pools_per_match": 13,
+      "rationale": "Tiers variam por dificuldade da modalidade: modalidades mais fáceis não têm tier alto (R$50), modalidade mais difícil não tem tier baixo (R$5).",
+      "auto_creation": "sync-matches.service.ts cria as 13 pools automaticamente para cada partida nova. Para partidas já existentes, o sync detecta as pools faltantes por modality+tier e as cria na próxima execução (a cada 6h ou na inicialização)."
     },
     "list_type_private": {
       "value": "livre, definido pelo criador da lista"
