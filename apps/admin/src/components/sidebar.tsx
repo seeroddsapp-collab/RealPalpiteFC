@@ -1,13 +1,14 @@
-import Link from 'next/link'
 import Image from 'next/image'
 import logo from '@/imagens/logorp.png'
+import { LayoutDashboard, Layers, Users, Trophy } from 'lucide-react'
+import { NavItem } from './nav-item'
 import { LogoutButton } from './logout-button'
 
 const NAV = [
-  { href: '/dashboard',             label: 'Dashboard',    icon: '📊' },
-  { href: '/dashboard/pools',       label: 'Pools',        icon: '🎯' },
-  { href: '/dashboard/usuarios',    label: 'Usuários',     icon: '👥' },
-  { href: '/dashboard/campeonatos', label: 'Campeonatos',  icon: '🏆' },
+  { href: '/dashboard',             label: 'Dashboard',   Icon: LayoutDashboard },
+  { href: '/dashboard/pools',       label: 'Pools',       Icon: Layers },
+  { href: '/dashboard/usuarios',    label: 'Usuários',    Icon: Users },
+  { href: '/dashboard/campeonatos', label: 'Campeonatos', Icon: Trophy },
 ]
 
 export function Sidebar() {
@@ -24,15 +25,8 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
-        {NAV.map(({ href, label, icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-navy-800 hover:text-gold-400 text-sm font-medium transition-colors group"
-          >
-            <span className="text-base opacity-70 group-hover:opacity-100">{icon}</span>
-            {label}
-          </Link>
+        {NAV.map(item => (
+          <NavItem key={item.href} {...item} />
         ))}
       </nav>
 
