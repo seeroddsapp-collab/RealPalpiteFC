@@ -90,8 +90,13 @@ export function startCheckResultsCron(
       for (const match of all) {
         // Busca o campeonato para obter espn_code
         const champ = await db.championships.findById(match.championship_id);
-        const matchWithChamp = { ...match, championships: champ ?? undefined };
-        await processMatch(db, sportsData, matchWithChamp as never, bot);
+        const matchWithChamp = {
+          ...match,
+          championships: champ
+            ? { espn_code: champ.espn_code, football_data_code: champ.football_data_code }
+            : undefined,
+        };
+        await processMatch(db, sportsData, matchWithChamp, bot);
       }
     } catch (err) {
       console.error('[check-results] Erro no cron:', err);

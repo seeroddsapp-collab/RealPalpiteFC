@@ -458,18 +458,6 @@ export function msgMyEntriesBanca(
   );
 }
 
-export function msgPoolCancelled(amount: number, poolInfo: string): string {
-  return `↩️ *Partida cancelada.* Devolucao de *${fmtBrl(amount)}* creditada!\n_${poolInfo}_`;
-}
-
-export function msgCreatePoolStart(): string {
-  return '🆕 *Criar lista privada*\n\nEscolha o campeonato:';
-}
-
-export function msgMyEntries(): string {
-  return '📋 *Minhas Entradas*\n\nFuncionalidade em desenvolvimento. Em breve voce podera ver suas entradas ativas aqui.';
-}
-
 // ── Listas Privadas (criadas pelo usuário) ──────────────────────────────────
 
 export function msgMyPools(

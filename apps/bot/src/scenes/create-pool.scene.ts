@@ -66,6 +66,11 @@ export function buildCreatePoolScene(db: Db): Scenes.WizardScene<BotContext> {
       const match   = await db.matches.findById(matchId);
       if (!match) return;
 
+      if (match.status !== 'scheduled') {
+        await ctx.answerCbQuery('❌ Esta partida ja esta em andamento ou encerrada.', { show_alert: true });
+        return;
+      }
+
       ctx.session.createPool = {
         ...ctx.session.createPool,
         matchId,
