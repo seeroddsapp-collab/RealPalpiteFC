@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { toggleChampionshipActive } from '@/actions/admin'
 import { StatusBadge } from '@/components/status-badge'
+import { SyncButton } from '@/components/sync-button'
 
 async function getChampionships() {
   const db = createAdminClient()
@@ -30,6 +31,7 @@ export default async function CampeonatosPage() {
           <h1 className="text-2xl font-bold text-slate-900 mb-1">Campeonatos</h1>
           <p className="text-slate-400 text-sm">{active} ativos · {champs.length} total</p>
         </div>
+        <SyncButton />
       </div>
 
       <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">

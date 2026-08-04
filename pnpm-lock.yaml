@@ -38,6 +38,9 @@ importers:
       '@realpalpitefc/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@realpalpitefc/sports-data':
+        specifier: workspace:*
+        version: link:../../packages/sports-data
       '@supabase/ssr':
         specifier: ^0.6.0
         version: 0.6.1(@supabase/supabase-js@2.111.0)
