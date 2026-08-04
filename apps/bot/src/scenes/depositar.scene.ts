@@ -60,20 +60,13 @@ export function buildDepositarScene(db: Db, mp: MercadoPagoService) {
           expires_at: payment.expiresAt,
         });
 
-        // Envia imagem do QR Code
-        const qrBuffer = Buffer.from(payment.qrCodeBase64, 'base64');
-        await ctx.replyWithPhoto(
-          { source: qrBuffer },
-          {
-            caption:
-              `✅ *Depósito de ${fmtBrl(amount)}*\n\n` +
-              `Escaneie o QR Code ou copie o código PIX abaixo.\n` +
-              `_Expira em 30 minutos. O saldo é creditado automaticamente após confirmação._`,
-            parse_mode: 'Markdown',
-          },
+        // Envia código PIX copia-e-cola (sem foto — Render free tier não suporta sendPhoto)
+        await ctx.reply(
+          `✅ *Depósito de ${fmtBrl(amount)}*\n\n` +
+          `Copie o código PIX abaixo e cole no seu banco em *PIX → Copia e Cola*:\n` +
+          `_Expira em 30 minutos. O saldo é creditado automaticamente após o pagamento._`,
+          { parse_mode: 'Markdown' },
         );
-
-        // Envia código copia-e-cola
         await ctx.reply(`\`${payment.qrCode}\``, { parse_mode: 'Markdown' });
 
         await ctx.telegram.deleteMessage(ctx.chat!.id, loadingMsg.message_id).catch(() => {});
