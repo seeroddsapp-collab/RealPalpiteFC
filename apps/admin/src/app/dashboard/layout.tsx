@@ -2,6 +2,7 @@ import { Sidebar } from '@/components/sidebar'
 import { MobileHeader } from '@/components/mobile-nav'
 import { BottomNav } from '@/components/bottom-nav'
 import { MobileNavProvider } from '@/components/mobile-nav-context'
+import { InstallPrompt } from '@/components/install-prompt'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -20,6 +21,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Bottom nav flutuante — visível apenas em mobile */}
         <BottomNav />
+
+        {/* Prompt de instalação PWA */}
+        <InstallPrompt />
       </div>
     </MobileNavProvider>
   )
