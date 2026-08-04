@@ -24,7 +24,7 @@ import { buildSacarScene, SACAR_SCENE, handleSacarOk } from './scenes/sacar.scen
 import { buildAlterarPixScene, ALTERAR_PIX_SCENE } from './scenes/alterar-pix.scene';
 import { startClosePoolsCron } from './cron/close-pools.cron';
 import { startCheckResultsCron } from './cron/check-results.cron';
-import { startMatchSyncCron } from './services/sync-matches.service';
+import { startMatchSyncCron, syncMatches } from './services/sync-matches.service';
 import { MercadoPagoService } from './services/mercadopago.service';
 import { fmtBrl } from './formatters/messages';
 
@@ -236,6 +236,24 @@ async function main() {
         }
         if (req.url?.startsWith('/pix/webhook') && req.method === 'POST') {
           handlePixWebhook(req, res);
+          return;
+        }
+        if (req.url === '/api/sync' && req.method === 'POST') {
+          const syncSecret = process.env.BOT_SYNC_SECRET;
+          if (!syncSecret || req.headers['authorization'] !== `Bearer ${syncSecret}`) {
+            res.writeHead(401);
+            res.end('Unauthorized');
+            return;
+          }
+          syncMatches(db, sportsData)
+            .then(result => {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify(result));
+            })
+            .catch(err => {
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: String(err) }));
+            });
           return;
         }
         webhookCallback(req, res);

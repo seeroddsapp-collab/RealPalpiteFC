@@ -37,14 +37,21 @@ async function createMissingPools(
   }
 }
 
-export async function syncMatches(db: Db, sportsData: SportsDataService): Promise<void> {
+export async function syncMatches(
+  db: Db,
+  sportsData: SportsDataService,
+): Promise<{ inserted: number; updated: number; errors: string[] }> {
   const championships = await db.championships.findActive();
   const active = championships.filter(c => c.espn_code);
 
   if (active.length === 0) {
     console.log('[sync] Nenhum campeonato com espn_code cadastrado.');
-    return;
+    return { inserted: 0, updated: 0, errors: [] };
   }
+
+  let totalInserted = 0;
+  let totalUpdated = 0;
+  const errors: string[] = [];
 
   for (const champ of active) {
     try {
@@ -77,7 +84,6 @@ export async function syncMatches(db: Db, sportsData: SportsDataService): Promis
           updated++;
         }
 
-        // Cria pools globais faltantes para a partida (apenas se estiver agendada)
         if (m.status === 'scheduled' || m.status === 'in_progress') {
           const existingPools = await db.pools.findOpenByMatch(matchId);
           await createMissingPools(db, matchId, existingPools).catch((err: unknown) =>
@@ -86,9 +92,10 @@ export async function syncMatches(db: Db, sportsData: SportsDataService): Promis
         }
       }
 
+      totalInserted += inserted;
+      totalUpdated += updated;
       console.log(`[sync] ${champ.name}: ${inserted} novas, ${updated} atualizadas`);
 
-      // Persiste logo do campeonato na primeira vez que aparece
       if (!champ.logo_url) {
         const logoUrl = await sportsData.getChampionshipLogoUrl(champ.espn_code!).catch(() => null);
         if (logoUrl) {
@@ -97,8 +104,11 @@ export async function syncMatches(db: Db, sportsData: SportsDataService): Promis
       }
     } catch (err) {
       console.error(`[sync] Erro ao sincronizar ${champ.name}:`, err);
+      errors.push(`${champ.name}: ${String(err)}`);
     }
   }
+
+  return { inserted: totalInserted, updated: totalUpdated, errors };
 }
 
 export function startMatchSyncCron(db: Db, sportsData: SportsDataService): void {
