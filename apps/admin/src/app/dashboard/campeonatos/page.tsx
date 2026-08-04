@@ -28,16 +28,16 @@ export default async function CampeonatosPage() {
     <div>
       <div className="flex items-end justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">Campeonatos</h1>
-          <p className="text-slate-400 text-sm">{active} ativos · {champs.length} total</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">Campeonatos</h1>
+          <p className="text-slate-400 dark:text-slate-500 text-sm">{active} ativos · {champs.length} total</p>
         </div>
         <SyncButton />
       </div>
 
-      <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-navy-900 rounded-xl border border-stone-200 dark:border-navy-700 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-slate-400 text-xs uppercase tracking-wide">
+            <thead className="bg-stone-50 dark:bg-navy-800 text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wide">
               <tr>
                 <th className="px-6 py-3 text-left">Campeonato</th>
                 <th className="px-6 py-3 text-left">ESPN Code</th>
@@ -46,15 +46,15 @@ export default async function CampeonatosPage() {
                 <th className="px-6 py-3 text-left">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100">
+            <tbody className="divide-y divide-stone-100 dark:divide-navy-700">
               {champs.map(c => (
-                <tr key={c.id} className="hover:bg-stone-50 transition-colors">
+                <tr key={c.id} className="hover:bg-stone-50 dark:hover:bg-navy-800 transition-colors">
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-3">
                       {c.logo_url && (
                         <img src={c.logo_url} alt="" className="w-6 h-6 object-contain flex-shrink-0" />
                       )}
-                      <span className="font-medium text-slate-800">{c.name}</span>
+                      <span className="font-medium text-slate-800 dark:text-slate-200">{c.name}</span>
                     </div>
                   </td>
                   <td className="px-6 py-3">
@@ -72,7 +72,7 @@ export default async function CampeonatosPage() {
                       <input
                         name="espn_code"
                         defaultValue={c.espn_code ?? ''}
-                        className="border border-stone-200 rounded-lg px-2 py-1 text-xs w-28 font-mono focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 bg-stone-50"
+                        className="border border-stone-200 dark:border-navy-700 rounded-lg px-2 py-1 text-xs w-28 font-mono focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 bg-stone-50 dark:bg-navy-800 dark:text-slate-200"
                         placeholder="ex: bra.1"
                       />
                       <button
@@ -84,8 +84,8 @@ export default async function CampeonatosPage() {
                     </form>
                   </td>
                   <td className="px-6 py-3">
-                    <span className="text-slate-600 font-medium">{matchCounts[c.id] ?? 0}</span>
-                    <span className="text-slate-400 text-xs ml-1">partidas</span>
+                    <span className="text-slate-600 dark:text-slate-300 font-medium">{matchCounts[c.id] ?? 0}</span>
+                    <span className="text-slate-400 dark:text-slate-500 text-xs ml-1">partidas</span>
                   </td>
                   <td className="px-6 py-3">
                     <StatusBadge status={c.is_active ? 'open' : 'cancelled'} />
@@ -96,7 +96,7 @@ export default async function CampeonatosPage() {
                         type="submit"
                         className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${
                           c.is_active
-                            ? 'bg-stone-100 text-slate-600 hover:bg-stone-200'
+                            ? 'bg-stone-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-stone-200 dark:hover:bg-navy-700'
                             : 'bg-gold-500/10 text-gold-700 hover:bg-gold-500/20'
                         }`}
                       >

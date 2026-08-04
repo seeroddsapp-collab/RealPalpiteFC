@@ -2,6 +2,7 @@ import Image from 'next/image'
 import logo from '@/imagens/logorp.png'
 import { NavList } from './nav-item'
 import { LogoutButton } from './logout-button'
+import { ThemeToggle } from './theme-toggle'
 
 export function Sidebar() {
   return (
@@ -21,8 +22,11 @@ export function Sidebar() {
       </nav>
 
       {/* Logout */}
-      <div className="px-3 py-4 border-t border-navy-800">
-        <LogoutButton />
+      <div className="px-3 py-4 border-t border-navy-800 flex items-center gap-1">
+        <div className="flex-1">
+          <LogoutButton />
+        </div>
+        <ThemeToggle />
       </div>
     </aside>
   )

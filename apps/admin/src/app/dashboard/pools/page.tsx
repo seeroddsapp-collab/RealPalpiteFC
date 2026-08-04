@@ -85,8 +85,8 @@ export default async function PoolsPage({
     <div>
       <div className="flex items-end justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">Pools</h1>
-          <p className="text-slate-400 text-sm">{total} pool{total !== 1 ? 's' : ''} encontrada{total !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">Pools</h1>
+          <p className="text-slate-400 dark:text-slate-500 text-sm">{total} pool{total !== 1 ? 's' : ''} encontrada{total !== 1 ? 's' : ''}</p>
         </div>
         <SearchBar placeholder="Buscar por time..." defaultValue={q} />
       </div>
@@ -99,7 +99,7 @@ export default async function PoolsPage({
             className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
               status === t.value
                 ? 'bg-gold-500 text-navy-900'
-                : 'bg-white border border-stone-200 text-slate-500 hover:border-gold-400 hover:text-gold-600'
+                : 'bg-white dark:bg-navy-900 border border-stone-200 dark:border-navy-700 text-slate-500 dark:text-slate-400 hover:border-gold-400 hover:text-gold-600'
             }`}
           >
             {t.label}
@@ -107,10 +107,10 @@ export default async function PoolsPage({
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-navy-900 rounded-xl border border-stone-200 dark:border-navy-700 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-slate-400 text-xs uppercase tracking-wide">
+            <thead className="bg-stone-50 dark:bg-navy-800 text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wide">
               <tr>
                 <th className="px-6 py-3 text-left">Partida</th>
                 <th className="px-6 py-3 text-left">Modalidade</th>
@@ -121,23 +121,23 @@ export default async function PoolsPage({
                 <th className="px-6 py-3 text-left">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100">
+            <tbody className="divide-y divide-stone-100 dark:divide-navy-700">
               {pools.map(p => {
                 const match = Array.isArray(p.match) ? p.match[0] : p.match
                 const entryCount = counts[p.id] ?? 0
                 const arrecadado = entryCount * p.tier_brl
                 return (
-                  <tr key={p.id} className="hover:bg-stone-50 transition-colors">
+                  <tr key={p.id} className="hover:bg-stone-50 dark:hover:bg-navy-800 transition-colors">
                     <td className="px-6 py-3">
-                      <div className="font-medium text-slate-800">{match ? `${match.home_team} × ${match.away_team}` : '—'}</div>
+                      <div className="font-medium text-slate-800 dark:text-slate-200">{match ? `${match.home_team} × ${match.away_team}` : '—'}</div>
                       {match?.kickoff_at && (
-                        <div className="text-xs text-slate-400 mt-0.5">{fmtDate(match.kickoff_at)}</div>
+                        <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{fmtDate(match.kickoff_at)}</div>
                       )}
                     </td>
-                    <td className="px-6 py-3 text-slate-600">{MODALITY_LABEL[p.modality] ?? p.modality}</td>
-                    <td className="px-6 py-3 font-mono text-xs font-semibold text-slate-700">{fmtBrl(p.tier_brl)}</td>
-                    <td className="px-6 py-3 text-slate-600">{entryCount}</td>
-                    <td className="px-6 py-3 text-slate-700 font-medium">{fmtBrl(arrecadado)}</td>
+                    <td className="px-6 py-3 text-slate-600 dark:text-slate-300">{MODALITY_LABEL[p.modality] ?? p.modality}</td>
+                    <td className="px-6 py-3 font-mono text-xs font-semibold text-slate-700 dark:text-slate-200">{fmtBrl(p.tier_brl)}</td>
+                    <td className="px-6 py-3 text-slate-600 dark:text-slate-300">{entryCount}</td>
+                    <td className="px-6 py-3 text-slate-700 dark:text-slate-200 font-medium">{fmtBrl(arrecadado)}</td>
                     <td className="px-6 py-3"><StatusBadge status={p.status} /></td>
                     <td className="px-6 py-3">
                       <Link
@@ -152,7 +152,7 @@ export default async function PoolsPage({
               })}
               {pools.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400 dark:text-slate-500">
                     Nenhuma pool encontrada.
                   </td>
                 </tr>

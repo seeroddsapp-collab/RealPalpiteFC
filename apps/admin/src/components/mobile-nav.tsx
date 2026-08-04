@@ -6,16 +6,15 @@ import Image from 'next/image'
 import logo from '@/imagens/logorp.png'
 import { NavList } from './nav-item'
 import { LogoutButton } from './logout-button'
+import { ThemeToggle } from './theme-toggle'
 import { Menu, X } from 'lucide-react'
 
 export function MobileHeader() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
-  // Fecha o drawer ao navegar
   useEffect(() => { setOpen(false) }, [pathname])
 
-  // Trava o scroll do body quando o drawer está aberto
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
@@ -29,13 +28,16 @@ export function MobileHeader() {
           <Image src={logo} alt="RPFC" width={28} height={28} className="rounded-lg" />
           <span className="text-gold-500 font-bold text-sm tracking-wide">RPFC Admin</span>
         </div>
-        <button
-          onClick={() => setOpen(v => !v)}
-          className="p-2 rounded-lg text-slate-400 hover:text-gold-400 hover:bg-navy-800 transition-colors"
-          aria-label="Menu"
-        >
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <button
+            onClick={() => setOpen(v => !v)}
+            className="p-2 rounded-lg text-slate-400 hover:text-gold-400 hover:bg-navy-800 transition-colors"
+            aria-label="Menu"
+          >
+            {open ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </header>
 
       {/* Overlay escuro */}

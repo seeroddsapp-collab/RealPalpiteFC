@@ -61,16 +61,16 @@ export default async function UsuariosPage({
     <div>
       <div className="flex items-end justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">Usuários</h1>
-          <p className="text-slate-400 text-sm">{total} usuário{total !== 1 ? 's' : ''} registrado{total !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">Usuários</h1>
+          <p className="text-slate-400 dark:text-slate-500 text-sm">{total} usuário{total !== 1 ? 's' : ''} registrado{total !== 1 ? 's' : ''}</p>
         </div>
         <SearchBar placeholder="Buscar por @username" defaultValue={q} />
       </div>
 
-      <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-navy-900 rounded-xl border border-stone-200 dark:border-navy-700 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-slate-400 text-xs uppercase tracking-wide">
+            <thead className="bg-stone-50 dark:bg-navy-800 text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wide">
               <tr>
                 <th className="px-6 py-3 text-left">Telegram</th>
                 <th className="px-6 py-3 text-left">Saldo</th>
@@ -80,20 +80,20 @@ export default async function UsuariosPage({
                 <th className="px-6 py-3 text-left">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100">
+            <tbody className="divide-y divide-stone-100 dark:divide-navy-700">
               {users.map(u => (
-                <tr key={u.id} className={`hover:bg-stone-50 transition-colors ${u.is_blocked ? 'opacity-60' : ''}`}>
+                <tr key={u.id} className={`hover:bg-stone-50 dark:hover:bg-navy-800 transition-colors ${u.is_blocked ? 'opacity-60' : ''}`}>
                   <td className="px-6 py-3">
                     <Link href={`/dashboard/usuarios/${u.id}`} className="group">
-                      <div className="font-medium text-slate-800 group-hover:text-gold-600 transition-colors">
+                      <div className="font-medium text-slate-800 dark:text-slate-200 group-hover:text-gold-600 transition-colors">
                         {u.username ? `@${u.username}` : `ID ${u.telegram_id}`}
                       </div>
-                      <div className="text-xs text-slate-400 mt-0.5">ID: {String(u.telegram_id)}</div>
+                      <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">ID: {String(u.telegram_id)}</div>
                     </Link>
                   </td>
-                  <td className="px-6 py-3 font-medium text-slate-700 font-mono text-xs">{fmtBrl(u.virtual_balance)}</td>
-                  <td className="px-6 py-3 text-slate-600">{counts[u.id] ?? 0}</td>
-                  <td className="px-6 py-3 text-slate-400 text-xs">{fmtDate(u.created_at)}</td>
+                  <td className="px-6 py-3 font-medium text-slate-700 dark:text-slate-200 font-mono text-xs">{fmtBrl(u.virtual_balance)}</td>
+                  <td className="px-6 py-3 text-slate-600 dark:text-slate-300">{counts[u.id] ?? 0}</td>
+                  <td className="px-6 py-3 text-slate-400 dark:text-slate-500 text-xs">{fmtDate(u.created_at)}</td>
                   <td className="px-6 py-3">
                     <StatusBadge status={u.is_blocked ? 'cancelled' : 'open'} />
                   </td>
@@ -104,7 +104,7 @@ export default async function UsuariosPage({
                         className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${
                           u.is_blocked
                             ? 'bg-gold-500/10 text-gold-700 hover:bg-gold-500/20'
-                            : 'bg-red-50 text-red-600 hover:bg-red-100'
+                            : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30'
                         }`}
                       >
                         {u.is_blocked ? 'Desbloquear' : 'Bloquear'}
@@ -115,7 +115,7 @@ export default async function UsuariosPage({
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400 dark:text-slate-500">
                     Nenhum usuário encontrado.
                   </td>
                 </tr>

@@ -45,13 +45,13 @@ export function SearchBar({ placeholder, paramName = 'q', defaultValue = '' }: S
         value={value}
         onChange={e => setValue(e.target.value)}
         placeholder={placeholder}
-        className="pl-9 pr-8 py-2 text-sm border border-stone-200 rounded-lg bg-white focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 w-64 transition-colors"
+        className="pl-9 pr-8 py-2 text-sm border border-stone-200 dark:border-navy-700 rounded-lg bg-white dark:bg-navy-800 dark:text-slate-200 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 w-64 transition-colors"
       />
       {value && (
         <button
           type="button"
           onClick={handleClear}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
         >
           <X size={13} />
         </button>

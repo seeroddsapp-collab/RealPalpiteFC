@@ -241,7 +241,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
 
       {/* ── Seção 1: Fluxo PIX ── */}
       <div>
-        <p className="text-xs text-slate-500 uppercase tracking-widest mb-3 font-semibold">Fluxo PIX</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 font-semibold">Fluxo PIX</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiCard label="Total Depositado" value={fmtBrl(totalDeposited)} color="text-emerald-400" />
           <KpiCard label="Total Sacado"     value={fmtBrl(totalWithdrawn)} color="text-rose-400" />
@@ -252,7 +252,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
 
       {/* ── Seção 2: Negócio ── */}
       <div>
-        <p className="text-xs text-slate-500 uppercase tracking-widest mb-3 font-semibold">Bolões</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 font-semibold">Bolões</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiCard label="Arrecadação"       value={fmtBrl(arrecadacao)} sub="Total de entradas"    color="text-blue-400" />
           <KpiCard label="Prêmios Pagos"     value={fmtBrl(premios)}     sub="Distribuído a vencedores" color="text-amber-400" />
@@ -263,7 +263,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
 
       {/* ── Seção 3: Pendências ── */}
       <div>
-        <p className="text-xs text-slate-500 uppercase tracking-widest mb-3 font-semibold">Pendências</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 font-semibold">Pendências</p>
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-navy-800 rounded-xl p-4 border border-amber-500/20 flex items-center justify-between">
             <div>

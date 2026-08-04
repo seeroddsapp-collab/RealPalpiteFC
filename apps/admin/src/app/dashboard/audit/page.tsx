@@ -51,20 +51,20 @@ export default async function AuditPage({
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 mb-1">Audit Log</h1>
-        <p className="text-slate-400 text-sm">{total} intervenção{total !== 1 ? 'ões' : ''} de resultado</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">Audit Log</h1>
+        <p className="text-slate-400 dark:text-slate-500 text-sm">{total} intervenção{total !== 1 ? 'ões' : ''} de resultado</p>
       </div>
 
       {logs.length === 0 ? (
-        <div className="bg-white rounded-xl border border-stone-200 shadow-sm px-6 py-16 text-center">
-          <p className="text-slate-400">Nenhuma intervenção de resultado registrada ainda.</p>
-          <p className="text-slate-300 text-sm mt-1">Aparecerá aqui quando você usar "Intervir" em uma pool.</p>
+        <div className="bg-white dark:bg-navy-900 rounded-xl border border-stone-200 dark:border-navy-700 shadow-sm px-6 py-16 text-center">
+          <p className="text-slate-400 dark:text-slate-500">Nenhuma intervenção de resultado registrada ainda.</p>
+          <p className="text-slate-300 dark:text-slate-600 text-sm mt-1">Aparecerá aqui quando você usar "Intervir" em uma pool.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-navy-900 rounded-xl border border-stone-200 dark:border-navy-700 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-stone-50 text-slate-400 text-xs uppercase tracking-wide">
+              <thead className="bg-stone-50 dark:bg-navy-800 text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wide">
                 <tr>
                   <th className="px-6 py-3 text-left">Data</th>
                   <th className="px-6 py-3 text-left">Pool</th>
@@ -73,28 +73,28 @@ export default async function AuditPage({
                   <th className="px-6 py-3 text-left">Motivo</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100">
+              <tbody className="divide-y divide-stone-100 dark:divide-navy-700">
                 {logs.map(log => {
                   const pool = resolvePool(log.pool as PoolRow | PoolRow[] | null)
                   const match = resolveMatch(pool)
                   return (
-                    <tr key={log.id} className="hover:bg-stone-50 transition-colors">
-                      <td className="px-6 py-3 text-slate-400 text-xs whitespace-nowrap">{fmtDate(log.created_at)}</td>
+                    <tr key={log.id} className="hover:bg-stone-50 dark:hover:bg-navy-800 transition-colors">
+                      <td className="px-6 py-3 text-slate-400 dark:text-slate-500 text-xs whitespace-nowrap">{fmtDate(log.created_at)}</td>
                       <td className="px-6 py-3">
                         {match && (
-                          <div className="font-medium text-slate-800 text-xs">{match.home_team} × {match.away_team}</div>
+                          <div className="font-medium text-slate-800 dark:text-slate-200 text-xs">{match.home_team} × {match.away_team}</div>
                         )}
                         {pool && (
-                          <div className="text-xs text-slate-400 mt-0.5">{MODALITY_LABEL[pool.modality] ?? pool.modality}</div>
+                          <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{MODALITY_LABEL[pool.modality] ?? pool.modality}</div>
                         )}
                       </td>
-                      <td className="px-6 py-3 font-mono text-xs text-slate-500">
+                      <td className="px-6 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">
                         {JSON.stringify(log.previous_result)}
                       </td>
                       <td className="px-6 py-3 font-mono text-xs text-gold-700 font-semibold">
                         {JSON.stringify(log.new_result)}
                       </td>
-                      <td className="px-6 py-3 text-slate-600 text-xs max-w-xs">
+                      <td className="px-6 py-3 text-slate-600 dark:text-slate-300 text-xs max-w-xs">
                         <span className="line-clamp-2">{log.reason}</span>
                       </td>
                     </tr>
