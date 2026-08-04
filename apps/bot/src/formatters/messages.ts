@@ -61,7 +61,7 @@ export function msgWelcome(
 ): string {
   const name = firstName ?? (username ? `@${username}` : 'jogador');
   return (
-    `⚽ *Ola, ${name}!*\n\n` +
+    `⚽ *Ola, ${name}! Bem-vindo ao RealPalpiteFC*\n\n` +
     `💰 Saldo disponivel: *${fmtBrl(balance)}*\n\n` +
     `Pronto para palpitar? Escolha uma partida e tente multiplicar seu saldo. Boa sorte! 🤞`
   );
