@@ -28,13 +28,12 @@ const GLOBAL_POOLS_CONFIG: Omit<PoolInsert, 'match_id' | 'created_by'>[] = [
 async function createMissingPools(
   db: Db,
   matchId: string,
-  createdBy: string,
   existing: PoolRow[],
 ): Promise<void> {
   const existingKeys = new Set(existing.map(p => `${p.modality}:${p.tier_brl}`));
   const missing = GLOBAL_POOLS_CONFIG.filter(p => !existingKeys.has(`${p.modality}:${p.tier_brl}`));
   for (const pool of missing) {
-    await db.pools.create({ ...pool, match_id: matchId, created_by: createdBy });
+    await db.pools.create({ ...pool, match_id: matchId, created_by: null });
   }
 }
 
@@ -45,13 +44,6 @@ export async function syncMatches(db: Db, sportsData: SportsDataService): Promis
   if (active.length === 0) {
     console.log('[sync] Nenhum campeonato com espn_code cadastrado.');
     return;
-  }
-
-  // Usa o primeiro usuário como "criador de sistema" para pools globais
-  const firstUser = await db.users.findFirst();
-  const systemUserId = firstUser?.id;
-  if (!systemUserId) {
-    console.warn('[sync] Nenhum usuário no banco — pools não serão criadas automaticamente.');
   }
 
   for (const champ of active) {
@@ -85,10 +77,10 @@ export async function syncMatches(db: Db, sportsData: SportsDataService): Promis
           updated++;
         }
 
-        // Cria pools globais faltantes para a partida
-        if (systemUserId) {
+        // Cria pools globais faltantes para a partida (apenas se estiver agendada)
+        if (m.status === 'scheduled' || m.status === 'in_progress') {
           const existingPools = await db.pools.findOpenByMatch(matchId);
-          await createMissingPools(db, matchId, systemUserId, existingPools).catch((err: unknown) =>
+          await createMissingPools(db, matchId, existingPools).catch((err: unknown) =>
             console.error(`[sync] Erro ao criar pools para partida ${matchId}:`, err),
           );
         }

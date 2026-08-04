@@ -38,10 +38,18 @@ async function processMatch(
     console.log(`[check-results] Partida ${match.id}: ${match.status} → ${newStatus}`);
   }
 
-  // Resolve pools quando a partida termina ou é cancelada
+  // Resolve pools quando a partida termina ou é cancelada/adiada
   if (newStatus === 'finished' || cancelled) {
     const closedPools = await db.pools.findClosed();
-    const poolsForMatch = closedPools.filter(p => p.match_id === match.id);
+    let poolsForMatch = closedPools.filter(p => p.match_id === match.id);
+
+    // Partida cancelada/adiada: também processar pools ainda abertas
+    // (ex: adiamento detectado antes das pools fecharem 5 min antes do kickoff)
+    if (cancelled) {
+      const openPools = await db.pools.findOpenByMatch(match.id);
+      const openNotYetListed = openPools.filter(op => !poolsForMatch.some(cp => cp.id === op.id));
+      poolsForMatch = [...poolsForMatch, ...openNotYetListed];
+    }
 
     for (const pool of poolsForMatch) {
       const matchResult = providerMatch.score
