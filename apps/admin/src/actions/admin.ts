@@ -71,6 +71,7 @@ export async function triggerSync(): Promise<{ inserted: number; updated: number
 
   let inserted = 0
   let updated = 0
+  const errors: string[] = []
 
   for (const champ of active) {
     try {
@@ -127,13 +128,14 @@ export async function triggerSync(): Promise<{ inserted: number; updated: number
       }
     } catch (err) {
       console.error(`[sync] Erro ao sincronizar ${champ.name}:`, err)
-      return { inserted, updated, error: `Erro em ${champ.name}: ${String(err)}` }
+      errors.push(`${champ.name}: ${String(err)}`)
+      // continua para o próximo campeonato
     }
   }
 
   revalidatePath('/dashboard/campeonatos')
   revalidatePath('/dashboard/partidas')
-  return { inserted, updated }
+  return { inserted, updated, error: errors.length > 0 ? errors.join(' | ') : undefined }
 }
 
 export async function toggleUserBlocked(userId: string, isBlocked: boolean) {
