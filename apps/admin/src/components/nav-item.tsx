@@ -23,11 +23,11 @@ function NavItem({ href, label, Icon, exact }: { href: string; label: string; Ic
       href={href}
       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group border-l-2 ${
         active
-          ? 'bg-navy-800 text-gold-400 border-gold-500'
-          : 'text-slate-400 hover:bg-navy-800 hover:text-gold-400 border-transparent'
+          ? 'bg-stone-100 dark:bg-navy-800 text-gold-600 dark:text-gold-400 border-gold-500'
+          : 'text-slate-500 dark:text-slate-400 hover:bg-stone-100 dark:hover:bg-navy-800 hover:text-gold-600 dark:hover:text-gold-400 border-transparent'
       }`}
     >
-      <Icon size={16} className={active ? 'text-gold-500' : 'text-slate-500 group-hover:text-gold-500'} />
+      <Icon size={16} className={active ? 'text-gold-600 dark:text-gold-500' : 'text-slate-400 dark:text-slate-500 group-hover:text-gold-600 dark:group-hover:text-gold-500'} />
       {label}
     </Link>
   )

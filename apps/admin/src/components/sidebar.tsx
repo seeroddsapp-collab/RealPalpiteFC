@@ -6,9 +6,9 @@ import { ThemeToggle } from './theme-toggle'
 
 export function Sidebar() {
   return (
-    <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 bg-navy-900 flex-col border-r border-navy-800">
+    <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 bg-white dark:bg-navy-900 flex-col border-r border-stone-200 dark:border-navy-800">
       {/* Logo */}
-      <div className="flex flex-col items-center gap-3 px-6 py-7 border-b border-navy-800">
+      <div className="flex flex-col items-center gap-3 px-6 py-7 border-b border-stone-200 dark:border-navy-800">
         <Image src={logo} alt="RealPalpiteFC" width={72} height={72} className="rounded-2xl" />
         <div className="text-center">
           <p className="text-gold-500 font-bold text-base tracking-wide leading-tight">RealPalpiteFC</p>
@@ -22,7 +22,7 @@ export function Sidebar() {
       </nav>
 
       {/* Logout */}
-      <div className="px-3 py-4 border-t border-navy-800 flex items-center gap-1">
+      <div className="px-3 py-4 border-t border-stone-200 dark:border-navy-800 flex items-center gap-1">
         <div className="flex-1">
           <LogoutButton />
         </div>

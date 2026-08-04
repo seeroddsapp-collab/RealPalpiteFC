@@ -59,13 +59,13 @@ function Chip({ css, label }: { css: string; label: string }) {
 }
 
 function KpiCard({
-  label, value, sub, color = 'text-slate-200',
+  label, value, sub, color = 'text-slate-700 dark:text-slate-200',
 }: { label: string; value: string; sub?: string; color?: string }) {
   return (
-    <div className="bg-navy-800 rounded-xl p-4 border border-navy-700 flex flex-col gap-1">
-      <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">{label}</p>
+    <div className="bg-white dark:bg-navy-800 rounded-xl p-4 border border-stone-200 dark:border-navy-700 flex flex-col gap-1">
+      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide">{label}</p>
       <p className={`text-xl font-bold font-mono ${color}`}>{value}</p>
-      {sub && <p className="text-xs text-slate-500">{sub}</p>}
+      {sub && <p className="text-xs text-slate-400 dark:text-slate-500">{sub}</p>}
     </div>
   )
 }
@@ -265,17 +265,17 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
       <div>
         <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 font-semibold">Pendências</p>
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-navy-800 rounded-xl p-4 border border-amber-500/20 flex items-center justify-between">
+          <div className="bg-white dark:bg-navy-800 rounded-xl p-4 border border-amber-500/20 flex items-center justify-between">
             <div>
-              <p className="text-xs text-slate-400 font-medium">Depósitos Pendentes</p>
-              <p className="text-lg font-bold text-amber-400 font-mono">{fmtBrl(pendingAmt)}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Depósitos Pendentes</p>
+              <p className="text-lg font-bold text-amber-500 dark:text-amber-400 font-mono">{fmtBrl(pendingAmt)}</p>
             </div>
             <span className="text-2xl font-bold text-amber-500/40">{(pendingDeps ?? []).length}</span>
           </div>
-          <div className="bg-navy-800 rounded-xl p-4 border border-amber-500/20 flex items-center justify-between">
+          <div className="bg-white dark:bg-navy-800 rounded-xl p-4 border border-amber-500/20 flex items-center justify-between">
             <div>
-              <p className="text-xs text-slate-400 font-medium">Saques em Processamento</p>
-              <p className="text-lg font-bold text-amber-400 font-mono">{fmtBrl(processingAmt)}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Saques em Processamento</p>
+              <p className="text-lg font-bold text-amber-500 dark:text-amber-400 font-mono">{fmtBrl(processingAmt)}</p>
             </div>
             <span className="text-2xl font-bold text-amber-500/40">{(processingWits ?? []).length}</span>
           </div>
@@ -283,8 +283,8 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
       </div>
 
       {/* ── Seção 4: Gráfico ── */}
-      <div className="bg-navy-800 rounded-xl p-4 border border-navy-700">
-        <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-3">
+      <div className="bg-white dark:bg-navy-800 rounded-xl p-4 border border-stone-200 dark:border-navy-700">
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wide mb-3">
           Fluxo Últimos 30 Dias
         </p>
         <FlowChart data={chartData} />
@@ -292,7 +292,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
 
       {/* ── Seção 5: Tabelas ── */}
       <div>
-        <div className="flex gap-1 border-b border-navy-700 mb-4">
+        <div className="flex gap-1 border-b border-stone-200 dark:border-navy-700 mb-4">
           {(['depositos', 'saques', 'transacoes'] as const).map(t => (
             <a key={t} href={url(1, t)}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
@@ -309,7 +309,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-slate-400 border-b border-navy-700">
+                <tr className="text-left text-slate-400 border-b border-stone-100 dark:border-navy-700">
                   <th className="pb-3 pr-4">Usuário</th>
                   <th className="pb-3 pr-4">Valor</th>
                   <th className="pb-3 pr-4">Status</th>
@@ -319,8 +319,8 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
               </thead>
               <tbody>
                 {deposits.map((d: DepositRow) => (
-                  <tr key={d.id} className="border-b border-navy-700/50 hover:bg-navy-800/40">
-                    <td className="py-3 pr-4 text-slate-300">@{d.users?.username ?? d.users?.telegram_id ?? '—'}</td>
+                  <tr key={d.id} className="border-b border-stone-100 dark:border-navy-700/50 hover:bg-stone-50 dark:hover:bg-navy-800/40">
+                    <td className="py-3 pr-4 text-slate-600 dark:text-slate-300">@{d.users?.username ?? d.users?.telegram_id ?? '—'}</td>
                     <td className="py-3 pr-4 font-mono font-medium text-emerald-400">{fmtBrl(d.amount)}</td>
                     <td className="py-3 pr-4"><Chip css={DEPOSIT_STATUS_CSS[d.status] ?? ''} label={DEPOSIT_STATUS_LABEL[d.status] ?? d.status} /></td>
                     <td className="py-3 pr-4 text-slate-400 text-xs">{fmtDate(d.created_at)}</td>
@@ -338,7 +338,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-slate-400 border-b border-navy-700">
+                <tr className="text-left text-slate-400 border-b border-stone-100 dark:border-navy-700">
                   <th className="pb-3 pr-4">Usuário</th>
                   <th className="pb-3 pr-4">Valor</th>
                   <th className="pb-3 pr-4">Chave PIX</th>
@@ -348,8 +348,8 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
               </thead>
               <tbody>
                 {withdrawals.map((w: WithdrawalRow) => (
-                  <tr key={w.id} className="border-b border-navy-700/50 hover:bg-navy-800/40">
-                    <td className="py-3 pr-4 text-slate-300">@{w.users?.username ?? w.users?.telegram_id ?? '—'}</td>
+                  <tr key={w.id} className="border-b border-stone-100 dark:border-navy-700/50 hover:bg-stone-50 dark:hover:bg-navy-800/40">
+                    <td className="py-3 pr-4 text-slate-600 dark:text-slate-300">@{w.users?.username ?? w.users?.telegram_id ?? '—'}</td>
                     <td className="py-3 pr-4 font-mono font-medium text-rose-400">{fmtBrl(w.amount)}</td>
                     <td className="py-3 pr-4 text-slate-400 font-mono text-xs">{w.pix_key} <span className="text-slate-600">({w.pix_key_type})</span></td>
                     <td className="py-3 pr-4"><Chip css={WITHDRAWAL_STATUS_CSS[w.status] ?? ''} label={WITHDRAWAL_STATUS_LABEL[w.status] ?? w.status} /></td>
@@ -372,7 +372,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
                   className={`text-xs px-3 py-1.5 rounded-lg font-semibold border transition-colors ${
                     txType === t
                       ? 'bg-gold-500/20 text-gold-400 border-gold-500/40'
-                      : 'bg-navy-700 text-slate-400 border-navy-600 hover:text-gold-400'
+                      : 'bg-stone-100 dark:bg-navy-700 text-slate-500 dark:text-slate-400 border-stone-200 dark:border-navy-600 hover:text-gold-600 dark:hover:text-gold-400'
                   }`}
                 >
                   {t === 'all' ? 'Todas' : TX_TYPE_LABEL[t] ?? t}
@@ -383,7 +383,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-slate-400 border-b border-navy-700">
+                  <tr className="text-left text-slate-400 border-b border-stone-100 dark:border-navy-700">
                     <th className="pb-3 pr-4">Usuário</th>
                     <th className="pb-3 pr-4">Tipo</th>
                     <th className="pb-3 pr-4">Valor</th>
@@ -394,8 +394,8 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
                 </thead>
                 <tbody>
                   {transactions.map((tx: TxRow) => (
-                    <tr key={tx.id} className="border-b border-navy-700/50 hover:bg-navy-800/40">
-                      <td className="py-3 pr-4 text-slate-300">@{tx.users?.username ?? tx.users?.telegram_id ?? '—'}</td>
+                    <tr key={tx.id} className="border-b border-stone-100 dark:border-navy-700/50 hover:bg-stone-50 dark:hover:bg-navy-800/40">
+                      <td className="py-3 pr-4 text-slate-600 dark:text-slate-300">@{tx.users?.username ?? tx.users?.telegram_id ?? '—'}</td>
                       <td className="py-3 pr-4"><Chip css={TX_TYPE_CSS[tx.type] ?? ''} label={TX_TYPE_LABEL[tx.type] ?? tx.type} /></td>
                       <td className="py-3 pr-4 font-mono font-medium text-slate-200">{fmtBrl(tx.amount)}</td>
                       <td className="py-3 pr-4 font-mono text-slate-400 text-xs">{fmtBrl(tx.balance_after)}</td>
@@ -413,9 +413,9 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
         {/* Paginação */}
         {totalPages > 1 && (
           <div className="flex gap-2 justify-center pt-4">
-            {page > 1 && <a href={url(page - 1)} className="px-3 py-1 rounded bg-navy-800 text-slate-300 hover:bg-navy-700 text-sm">← Anterior</a>}
+            {page > 1 && <a href={url(page - 1)} className="px-3 py-1 rounded bg-stone-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-stone-200 dark:hover:bg-navy-700 text-sm">← Anterior</a>}
             <span className="px-3 py-1 text-slate-400 text-sm">{page} / {totalPages}</span>
-            {page < totalPages && <a href={url(page + 1)} className="px-3 py-1 rounded bg-navy-800 text-slate-300 hover:bg-navy-700 text-sm">Próxima →</a>}
+            {page < totalPages && <a href={url(page + 1)} className="px-3 py-1 rounded bg-stone-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-stone-200 dark:hover:bg-navy-700 text-sm">Próxima →</a>}
           </div>
         )}
       </div>

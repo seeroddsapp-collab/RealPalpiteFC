@@ -23,7 +23,7 @@ export function MobileHeader() {
   return (
     <>
       {/* Header fixo no topo — visível apenas em mobile */}
-      <header className="lg:hidden fixed top-0 inset-x-0 z-40 h-14 bg-navy-900 border-b border-navy-800 flex items-center justify-between px-4">
+      <header className="lg:hidden fixed top-0 inset-x-0 z-40 h-14 bg-white dark:bg-navy-900 border-b border-stone-200 dark:border-navy-800 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Image src={logo} alt="RPFC" width={28} height={28} className="rounded-lg" />
           <span className="text-gold-500 font-bold text-sm tracking-wide">RPFC Admin</span>
@@ -32,7 +32,7 @@ export function MobileHeader() {
           <ThemeToggle />
           <button
             onClick={() => setOpen(v => !v)}
-            className="p-2 rounded-lg text-slate-400 hover:text-gold-400 hover:bg-navy-800 transition-colors"
+            className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-gold-500 dark:hover:text-gold-400 hover:bg-stone-100 dark:hover:bg-navy-800 transition-colors"
             aria-label="Menu"
           >
             {open ? <X size={20} /> : <Menu size={20} />}
@@ -50,12 +50,12 @@ export function MobileHeader() {
 
       {/* Drawer deslizante */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 z-50 h-full w-72 bg-navy-900 border-r border-navy-800 flex flex-col transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed top-0 left-0 z-50 h-full w-72 bg-white dark:bg-navy-900 border-r border-stone-200 dark:border-navy-800 flex flex-col transition-transform duration-300 ease-in-out ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-navy-800">
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-stone-200 dark:border-navy-800">
           <Image src={logo} alt="RealPalpiteFC" width={40} height={40} className="rounded-xl" />
           <div>
             <p className="text-gold-500 font-bold text-sm tracking-wide">RealPalpiteFC</p>
@@ -69,7 +69,7 @@ export function MobileHeader() {
         </nav>
 
         {/* Logout */}
-        <div className="px-3 py-4 border-t border-navy-800">
+        <div className="px-3 py-4 border-t border-stone-200 dark:border-navy-800">
           <LogoutButton />
         </div>
       </aside>
