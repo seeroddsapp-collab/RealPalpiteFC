@@ -1,4 +1,4 @@
--- Funções atômicas de saldo — evitam race conditions em operações concorrentes.
+--- Funções atômicas de saldo — evitam race conditions em operações concorrentes.
 -- Todas usam UPDATE com WHERE condicional + RETURNING, garantindo atomicidade no Postgres.
 
 -- Debita `p_amount` do saldo apenas se o usuário tiver fundos suficientes.
