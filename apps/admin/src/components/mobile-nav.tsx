@@ -1,19 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import logo from '@/imagens/logorp.png'
 import { NavList } from './nav-item'
 import { LogoutButton } from './logout-button'
 import { ThemeToggle } from './theme-toggle'
-import { Menu, X } from 'lucide-react'
+import { useMobileNav } from './mobile-nav-context'
+import { X } from 'lucide-react'
 
 export function MobileHeader() {
-  const [open, setOpen] = useState(false)
+  const { open, setOpen } = useMobileNav()
   const pathname = usePathname()
 
-  useEffect(() => { setOpen(false) }, [pathname])
+  useEffect(() => { setOpen(false) }, [pathname, setOpen])
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -28,16 +29,7 @@ export function MobileHeader() {
           <Image src={logo} alt="RPFC" width={28} height={28} className="rounded-lg" />
           <span className="text-gold-500 font-bold text-sm tracking-wide">RPFC Admin</span>
         </div>
-        <div className="flex items-center gap-1">
-          <ThemeToggle />
-          <button
-            onClick={() => setOpen(v => !v)}
-            className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-gold-500 dark:hover:text-gold-400 hover:bg-stone-100 dark:hover:bg-navy-800 transition-colors"
-            aria-label="Menu"
-          >
-            {open ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
+        <ThemeToggle />
       </header>
 
       {/* Overlay escuro */}
@@ -54,13 +46,21 @@ export function MobileHeader() {
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-stone-200 dark:border-navy-800">
-          <Image src={logo} alt="RealPalpiteFC" width={40} height={40} className="rounded-xl" />
-          <div>
-            <p className="text-gold-500 font-bold text-sm tracking-wide">RealPalpiteFC</p>
-            <p className="text-slate-500 text-xs tracking-widest uppercase">Admin</p>
+        {/* Logo + fechar */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-200 dark:border-navy-800">
+          <div className="flex items-center gap-3">
+            <Image src={logo} alt="RealPalpiteFC" width={36} height={36} className="rounded-xl" />
+            <div>
+              <p className="text-gold-500 font-bold text-sm tracking-wide leading-tight">RealPalpiteFC</p>
+              <p className="text-slate-400 dark:text-slate-500 text-xs tracking-widest uppercase">Admin</p>
+            </div>
           </div>
+          <button
+            onClick={() => setOpen(false)}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-stone-100 dark:hover:bg-navy-800 transition-colors"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {/* Nav */}
