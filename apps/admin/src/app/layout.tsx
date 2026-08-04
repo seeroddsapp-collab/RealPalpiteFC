@@ -31,6 +31,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               document.documentElement.classList.add('dark');
             }
           } catch(e) {}
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(function(){});
+          }
         `}} />
       </head>
       <body className="bg-stone-50 dark:bg-navy-950 text-slate-900 dark:text-slate-100 antialiased">

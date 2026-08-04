@@ -84,10 +84,10 @@ export default async function DashboardPage() {
           <table className="w-full text-sm">
             <thead className="bg-stone-50 dark:bg-navy-800 text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wide">
               <tr>
-                <th className="px-6 py-3 text-left">Partida</th>
-                <th className="px-6 py-3 text-left">Modalidade</th>
-                <th className="px-6 py-3 text-left">Tier</th>
-                <th className="px-6 py-3 text-left">Status</th>
+                <th className="px-3 lg:px-6 py-3 text-left">Partida</th>
+                <th className="px-3 lg:px-6 py-3 text-left hidden sm:table-cell">Modalidade</th>
+                <th className="px-3 lg:px-6 py-3 text-left">Tier</th>
+                <th className="px-3 lg:px-6 py-3 text-left">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-navy-700">
@@ -95,12 +95,17 @@ export default async function DashboardPage() {
                 const match = Array.isArray(p.match) ? p.match[0] : p.match
                 return (
                   <tr key={p.id} className="hover:bg-stone-50 dark:hover:bg-navy-800 transition-colors">
-                    <td className="px-6 py-3 text-slate-800 dark:text-slate-200 font-medium">
-                      {match ? `${match.home_team} × ${match.away_team}` : '—'}
+                    <td className="px-3 lg:px-6 py-3 text-slate-800 dark:text-slate-200 font-medium max-w-[140px] lg:max-w-none">
+                      <span className="block truncate">
+                        {match ? `${match.home_team} × ${match.away_team}` : '—'}
+                      </span>
+                      <span className="sm:hidden text-xs text-slate-400 dark:text-slate-500 capitalize font-normal">
+                        {p.modality.replace(/_/g, ' ')}
+                      </span>
                     </td>
-                    <td className="px-6 py-3 text-slate-500 dark:text-slate-400 capitalize">{p.modality.replace(/_/g, ' ')}</td>
-                    <td className="px-6 py-3 text-slate-600 dark:text-slate-300 font-mono text-xs">{fmtBrl(p.tier_brl)}</td>
-                    <td className="px-6 py-3">
+                    <td className="px-3 lg:px-6 py-3 text-slate-500 dark:text-slate-400 capitalize hidden sm:table-cell">{p.modality.replace(/_/g, ' ')}</td>
+                    <td className="px-3 lg:px-6 py-3 text-slate-600 dark:text-slate-300 font-mono text-xs">{fmtBrl(p.tier_brl)}</td>
+                    <td className="px-3 lg:px-6 py-3">
                       <StatusBadge status={p.status} />
                     </td>
                   </tr>
