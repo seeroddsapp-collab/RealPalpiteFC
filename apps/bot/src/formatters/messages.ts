@@ -185,7 +185,7 @@ export function msgPoolDetail(pool: PoolRow, match: MatchRow, entryCount: number
     `⚽ *${match.home_team} x ${match.away_team}*\n` +
     `_${fmtDate(match.kickoff_at)}_\n\n` +
     `👥 Participantes: *${entryCount}*\n` +
-    `🏆 Premio estimado: *~${prize}*\n\n` +
+    `🏆 Premio se acertar: *~${prize}* _(taxa de 5%)_\n\n` +
     `_Escolha seu palpite:_`
   );
 }

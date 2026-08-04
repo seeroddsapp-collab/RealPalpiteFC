@@ -12,8 +12,8 @@ export function authMiddleware(db: Db): Middleware<BotContext> {
       if (!user) {
         user = await db.users.create(ctx.from.id, ctx.from.username);
       } else if (ctx.from.username && ctx.from.username !== user.username) {
-        // Atualiza username se mudou
-        await db.users.updateBalance(user.id, user.virtual_balance); // no-op para forçar; idealmente haveria updateUsername
+        await db.users.updateUsername(user.id, ctx.from.username);
+        user = { ...user, username: ctx.from.username };
       }
 
       if (user.is_blocked) {

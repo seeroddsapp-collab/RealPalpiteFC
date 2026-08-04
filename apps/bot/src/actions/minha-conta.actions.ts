@@ -113,4 +113,12 @@ export function registerMinhaContaActions(bot: { action: (...args: unknown[]) =>
     await ctx.answerCbQuery();
     return ctx.scene.enter(SACAR_SCENE);
   });
+
+  // Toast quando usuário tenta sacar com saldo insuficiente pelo botão bloqueado
+  (bot as any).action('mc_sacar_insuf', async (ctx: BotContext) => {
+    await ctx.answerCbQuery(
+      `Saldo mínimo para saque é R$ 20,00.\nDeposite para poder sacar seus ganhos.`,
+      { show_alert: true },
+    );
+  });
 }

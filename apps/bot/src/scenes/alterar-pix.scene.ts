@@ -3,6 +3,7 @@ import type { BotContext } from '../context';
 import type { Db } from '@realpalpitefc/database';
 import type { PixKeyType } from '../services/mercadopago.service';
 import { kbMinhaConta, kbPixKeyType } from '../keyboards/keyboards';
+import { msgMinhaConta } from '../formatters/messages';
 
 export const ALTERAR_PIX_SCENE = 'alterar_pix';
 
@@ -61,7 +62,7 @@ function validatePixKey(key: string, type: PixKeyType): string | null {
 }
 
 export function buildAlterarPixScene(db: Db) {
-  return new Scenes.WizardScene<BotContext>(
+  const scene = new Scenes.WizardScene<BotContext>(
     ALTERAR_PIX_SCENE,
 
     // Step 0 — pergunta o tipo da chave
@@ -159,4 +160,17 @@ export function buildAlterarPixScene(db: Db) {
       return ctx.scene.leave();
     },
   );
+
+  // Intercepta "Minha Conta" dentro da scene para encerrar o wizard corretamente
+  scene.action('minha_conta', async ctx => {
+    await ctx.answerCbQuery();
+    await ctx.scene.leave();
+    const user = ctx.session.user!;
+    await ctx.editMessageText(
+      msgMinhaConta(user.virtual_balance, user.pix_key ?? null),
+      { parse_mode: 'Markdown', reply_markup: kbMinhaConta().reply_markup },
+    ).catch(() => {});
+  });
+
+  return scene;
 }

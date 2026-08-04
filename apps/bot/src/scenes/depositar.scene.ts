@@ -6,6 +6,7 @@ import { fmtBrl } from '../formatters/messages';
 
 export const DEPOSITAR_SCENE = 'depositar';
 const MIN_DEPOSIT = 10;
+const MAX_DEPOSIT = 5000;
 
 export function buildDepositarScene(db: Db, mp: MercadoPagoService) {
   return new Scenes.WizardScene<BotContext>(
@@ -30,6 +31,14 @@ export function buildDepositarScene(db: Db, mp: MercadoPagoService) {
       if (isNaN(amount) || amount < MIN_DEPOSIT) {
         await ctx.reply(
           `Valor inválido. Digite um número igual ou maior que ${fmtBrl(MIN_DEPOSIT)}.\nEx: *50* ou *100,00*`,
+          { parse_mode: 'Markdown' },
+        );
+        return;
+      }
+
+      if (amount > MAX_DEPOSIT) {
+        await ctx.reply(
+          `Valor máximo por depósito é *${fmtBrl(MAX_DEPOSIT)}*.\nPara depósitos maiores, realize múltiplas transferências.`,
           { parse_mode: 'Markdown' },
         );
         return;

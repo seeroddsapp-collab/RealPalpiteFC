@@ -101,6 +101,14 @@ export class UsersRepository {
     if (error) throw error;
   }
 
+  async updateUsername(userId: string, username: string): Promise<void> {
+    const { error } = await this.db
+      .from('users')
+      .update({ username })
+      .eq('id', userId);
+    if (error) throw error;
+  }
+
   async updatePixKey(
     userId: string,
     pixKey: string,

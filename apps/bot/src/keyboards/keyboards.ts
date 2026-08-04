@@ -24,9 +24,13 @@ export function kbMinhaConta() {
 }
 
 export function kbMinhaContaCarteira(balance: number) {
+  const canWithdraw = balance >= 20;
   return Markup.inlineKeyboard([
     [Markup.button.callback('📥 Depositar', 'carteira_depositar')],
-    [Markup.button.callback('📤 Sacar', 'carteira_sacar')],
+    [Markup.button.callback(
+      canWithdraw ? '📤 Sacar' : '🔒 Sacar (saldo insuficiente)',
+      canWithdraw ? 'carteira_sacar' : 'mc_sacar_insuf',
+    )],
     [Markup.button.callback('⬅️ Minha Conta', 'minha_conta')],
   ]);
 }
@@ -76,8 +80,12 @@ export function kbMatches(matches: MatchRow[]) {
   return Markup.inlineKeyboard(rows);
 }
 
-export function kbTierSelect(tiers: number[], matchId: string) {
-  const rows = tiers.map(t => [Markup.button.callback(`💰 R$ ${t}`, `gl_tier:${matchId}:${t}`)]);
+export function kbTierSelect(tiers: number[], matchId: string, userBalance?: number) {
+  const rows = tiers.map(t => {
+    const canAfford = userBalance === undefined || userBalance >= t;
+    const label = canAfford ? `💰 R$ ${t}` : `🔒 R$ ${t}`;
+    return [Markup.button.callback(label, `gl_tier:${matchId}:${t}`)];
+  });
   rows.push([Markup.button.callback('⬅️ Campeonatos', 'gl_ch')]);
   return Markup.inlineKeyboard(rows);
 }

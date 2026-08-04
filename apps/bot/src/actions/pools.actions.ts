@@ -16,7 +16,8 @@ import {
   msgEntryOk,
   decodePred,
 } from '../formatters/messages';
-import { kbTierSelect, kbPools, kbPrediction, kbConfirm, kbBackToMenu } from '../keyboards/keyboards';
+import { kbTierSelect, kbPools, kbPrediction, kbConfirm, kbBackToMenu, kbMinhaContaCarteira } from '../keyboards/keyboards';
+import { Markup } from 'telegraf';
 
 type MatchCtx = BotContext & { match: RegExpMatchArray };
 
@@ -66,6 +67,7 @@ export function registerPoolsActions(bot: { action: (...args: unknown[]) => void
   (bot as any).action(/^gl_p:(.+)$/, async (ctx: MatchCtx) => {
     await ctx.answerCbQuery();
     const matchId = ctx.match[1];
+    const user = ctx.session.user!;
 
     const match = await db.matches.findById(matchId);
     if (!match) { await ctx.answerCbQuery('Partida não encontrada.'); return; }
@@ -84,15 +86,26 @@ export function registerPoolsActions(bot: { action: (...args: unknown[]) => void
 
     await safeEdit(ctx, msgTierSelect(match), {
       parse_mode: 'Markdown',
-      reply_markup: kbTierSelect(tiers, matchId).reply_markup,
+      reply_markup: kbTierSelect(tiers, matchId, user.virtual_balance).reply_markup,
     });
   });
 
   // gl_tier:{matchId}:{tier} — pools filtradas pelo tier escolhido
   (bot as any).action(/^gl_tier:(.{36}):(\d+)$/, async (ctx: MatchCtx) => {
-    await ctx.answerCbQuery();
     const matchId = ctx.match[1];
     const tier = parseInt(ctx.match[2], 10);
+    const user = ctx.session.user!;
+
+    // Bloqueia tier inacessível com toast explicativo
+    if (user.virtual_balance < tier) {
+      await ctx.answerCbQuery(
+        `🔒 Saldo insuficiente para R$ ${tier}\nSeu saldo: R$ ${user.virtual_balance.toFixed(2).replace('.', ',')}`,
+        { show_alert: true },
+      );
+      return;
+    }
+
+    await ctx.answerCbQuery();
 
     const match = await db.matches.findById(matchId);
     if (!match) { await ctx.answerCbQuery('Partida não encontrada.'); return; }
@@ -135,6 +148,24 @@ export function registerPoolsActions(bot: { action: (...args: unknown[]) => void
 
     const entries = await db.entries.findByPool(poolId);
     const entryCount = entries.length;
+    const user = ctx.session.user!;
+
+    // Saldo insuficiente — mostra detalhe mas sem botões de palpite
+    if (user.virtual_balance < pool.tier_brl) {
+      await safeEdit(
+        ctx,
+        msgPoolDetail(pool, match, entryCount) +
+          `\n\n❌ *Saldo insuficiente*\nSeu saldo: *R$ ${user.virtual_balance.toFixed(2).replace('.', ',')}* · Necessário: *R$ ${pool.tier_brl}*`,
+        {
+          parse_mode: 'Markdown',
+          reply_markup: Markup.inlineKeyboard([
+            [Markup.button.callback('📥 Depositar agora', 'mc_depositar')],
+            [Markup.button.callback('⬅️ Voltar', `gl_p:${match.id}`)],
+          ]).reply_markup,
+        },
+      );
+      return;
+    }
 
     await safeEdit(ctx, msgPoolDetail(pool, match, entryCount), {
       parse_mode: 'Markdown',

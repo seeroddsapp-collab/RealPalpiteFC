@@ -217,14 +217,13 @@ export function registerMyEntriesActions(bot: { action: (...args: unknown[]) => 
 
   // ── Finalizadas Recentes ──────────────────────────────────────────────────
   (bot as any).action('me_rec', async (ctx: BotContext) => {
+    await ctx.answerCbQuery();
     const userId  = ctx.session.user!.id;
     const entries = await db.entries.findAllByUser(userId);
     const all     = await loadDetails(db, entries);
     const rec     = all
       .filter(d => d.pool.status === 'resolved' || d.pool.status === 'cancelled')
       .slice(0, 15);
-
-    await ctx.answerCbQuery(rec.length === 0 ? 'Nenhuma entrada finalizada ainda.' : undefined);
 
     await safeEdit(ctx, msgMyEntriesRecentes(rec), {
       parse_mode: 'Markdown',
@@ -234,6 +233,7 @@ export function registerMyEntriesActions(bot: { action: (...args: unknown[]) => 
 
   // ── Histórico com filtros ─────────────────────────────────────────────────
   (bot as any).action(/^me_hist:(\w+):(\w+)$/, async (ctx: MatchCtx) => {
+    await ctx.answerCbQuery();
     const period  = ctx.match[1] as HistFilter['period'];
     const outcome = ctx.match[2] as HistFilter['outcome'];
     const filter: HistFilter = { period, outcome };
@@ -250,8 +250,6 @@ export function registerMyEntriesActions(bot: { action: (...args: unknown[]) => 
     if (outcome === 'won')  filtered = filtered.filter(d => d.entry.is_winner === true);
     if (outcome === 'lost') filtered = filtered.filter(d => d.entry.is_winner === false);
 
-    await ctx.answerCbQuery(filtered.length === 0 ? 'Nenhuma entrada neste período.' : undefined);
-
     await safeEdit(ctx, msgMyEntriesHist(filtered, filter), {
       parse_mode: 'Markdown',
       reply_markup: kbMyEntriesHist(filter).reply_markup,
@@ -260,6 +258,7 @@ export function registerMyEntriesActions(bot: { action: (...args: unknown[]) => 
 
   // ── Gestão de Banca ───────────────────────────────────────────────────────
   (bot as any).action(/^me_banca:(\w+)$/, async (ctx: MatchCtx) => {
+    await ctx.answerCbQuery();
     const period  = ctx.match[1] as HistFilter['period'];
     const from    = periodToDate(period);
     const userId  = ctx.session.user!.id;
@@ -275,9 +274,6 @@ export function registerMyEntriesActions(bot: { action: (...args: unknown[]) => 
       : entries;
     const resolved  = periodEntries.filter(e => e.is_winner !== null);
     const wonCount  = resolved.filter(e => e.is_winner === true).length;
-
-    const semMovimentacao = summary.invested === 0 && summary.prizes === 0 && summary.refunds === 0;
-    await ctx.answerCbQuery(semMovimentacao ? 'Nenhuma movimentação neste período.' : undefined);
 
     await safeEdit(ctx, msgMyEntriesBanca(summary, periodEntries.length, wonCount, resolved.length, period, balance), {
       parse_mode: 'Markdown',
