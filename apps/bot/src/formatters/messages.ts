@@ -63,7 +63,7 @@ export function msgWelcome(
   return (
     `⚽ *Ola, ${name}!*\n\n` +
     `💰 Saldo disponivel: *${fmtBrl(balance)}*\n\n` +
-    `Pronto para palpitar? Escolha uma partida e tente multiplicar seus creditos. Boa sorte! 🤞`
+    `Pronto para palpitar? Escolha uma partida e tente multiplicar seu saldo. Boa sorte! 🤞`
   );
 }
 
