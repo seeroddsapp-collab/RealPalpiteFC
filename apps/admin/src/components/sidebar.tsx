@@ -5,7 +5,7 @@ import { LogoutButton } from './logout-button'
 
 export function Sidebar() {
   return (
-    <aside className="fixed inset-y-0 left-0 w-64 bg-navy-900 flex flex-col border-r border-navy-800">
+    <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 bg-navy-900 flex-col border-r border-navy-800">
       {/* Logo */}
       <div className="flex flex-col items-center gap-3 px-6 py-7 border-b border-navy-800">
         <Image src={logo} alt="RealPalpiteFC" width={72} height={72} className="rounded-2xl" />
