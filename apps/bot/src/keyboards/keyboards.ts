@@ -44,6 +44,20 @@ export function kbMinhaContaPixKey(hasKey: boolean) {
   return Markup.inlineKeyboard(rows);
 }
 
+export function kbPixKeyType() {
+  return Markup.inlineKeyboard([
+    [
+      Markup.button.callback('🪪 CPF', 'apix_cpf'),
+      Markup.button.callback('📱 Celular', 'apix_phone'),
+    ],
+    [
+      Markup.button.callback('✉️ E-mail', 'apix_email'),
+      Markup.button.callback('🔀 Chave aleatória', 'apix_random'),
+    ],
+    [Markup.button.callback('⬅️ Minha Conta', 'minha_conta')],
+  ]);
+}
+
 export function kbChampionships(championships: ChampionshipRow[]) {
   const rows = championships.map(c => [Markup.button.callback(c.name, `gl_m:${c.id}`)]);
   rows.push([Markup.button.callback('🏠 Menu', 'menu')]);
