@@ -215,17 +215,29 @@ export function registerPoolsActions(bot: { action: (...args: unknown[]) => void
     await ctx.answerCbQuery();
     try {
       const prediction = parsePrediction(pool.modality, pred);
-      const newBalance = user.virtual_balance - pool.tier_brl;
 
-      // Cria entrada
-      await db.entries.create({
-        pool_id: poolId,
-        user_id: user.id,
-        prediction: prediction as unknown as Json,
-        amount: pool.tier_brl,
-      });
+      // 1. Debita saldo atomicamente — falha imediatamente se saldo insuficiente
+      const newBalance = await db.users.debitBalance(user.id, pool.tier_brl);
+      if (newBalance === null) {
+        await ctx.reply('❌ Saldo insuficiente para confirmar a entrada.');
+        return;
+      }
 
-      // Registra transação
+      // 2. Cria a entrada (com rollback se falhar)
+      try {
+        await db.entries.create({
+          pool_id: poolId,
+          user_id: user.id,
+          prediction: prediction as unknown as Json,
+          amount: pool.tier_brl,
+        });
+      } catch (entryErr) {
+        // Reverte o débito se não conseguiu criar a entrada
+        await db.users.creditBalance(user.id, pool.tier_brl);
+        throw entryErr;
+      }
+
+      // 3. Registra a transação
       await db.transactions.create({
         user_id: user.id,
         type: 'entry',
@@ -235,9 +247,7 @@ export function registerPoolsActions(bot: { action: (...args: unknown[]) => void
         description: `Entrada: ${match.home_team} × ${match.away_team}`,
       });
 
-      // Debita saldo
-      await db.users.updateBalance(user.id, newBalance);
-
+      ctx.session.user!.virtual_balance = newBalance;
       const predLabel = decodePred(pool.modality, pred, match.home_team, match.away_team);
 
       await safeEdit(ctx, msgEntryOk(pool, predLabel), {

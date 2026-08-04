@@ -62,6 +62,26 @@ export class UsersRepository {
     if (error) throw error;
   }
 
+  // Debita atomicamente — retorna novo saldo, ou null se saldo insuficiente.
+  async debitBalance(userId: string, amount: number): Promise<number | null> {
+    const { data, error } = await (this.db as any).rpc('debit_balance', {
+      p_user_id: userId,
+      p_amount: amount,
+    });
+    if (error) throw error;
+    return (data as number) ?? null;
+  }
+
+  // Credita atomicamente — retorna novo saldo.
+  async creditBalance(userId: string, amount: number): Promise<number> {
+    const { data, error } = await (this.db as any).rpc('credit_balance', {
+      p_user_id: userId,
+      p_amount: amount,
+    });
+    if (error) throw error;
+    return data as number;
+  }
+
   async findFirst(): Promise<UserRow | null> {
     const { data, error } = await this.db
       .from('users')

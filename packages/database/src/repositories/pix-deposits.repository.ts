@@ -54,6 +54,17 @@ export class PixDepositsRepository {
     if (error) throw error;
   }
 
+  // Confirma o depósito atomicamente somente se ainda estiver 'pending'.
+  // Retorna true se foi confirmado agora; false se já estava confirmado/falhou (idempotente).
+  async confirmIfPending(id: string, confirmedAt: Date): Promise<boolean> {
+    const { data, error } = await (this.db as any).rpc('confirm_pix_deposit', {
+      p_deposit_id: id,
+      p_confirmed_at: confirmedAt.toISOString(),
+    });
+    if (error) throw error;
+    return Array.isArray(data) && data.length > 0;
+  }
+
   async findByUser(
     userId: string,
     options: { limit?: number; offset?: number } = {},

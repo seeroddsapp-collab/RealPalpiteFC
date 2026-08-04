@@ -3,6 +3,7 @@ import type { BotContext } from '../context';
 import type { Db } from '@realpalpitefc/database';
 import type { MercadoPagoService, PixKeyType } from '../services/mercadopago.service';
 import { fmtBrl } from '../formatters/messages';
+import { kbMinhaConta } from '../keyboards/keyboards';
 
 export const SACAR_SCENE = 'sacar';
 const MIN_WITHDRAWAL = 20;
@@ -10,23 +11,14 @@ const MAX_DAILY = 500;
 const FIRST_WITHDRAWAL_LOCK_HOURS = 24;
 
 interface SacarSession extends Scenes.WizardSessionData {
-  waitingForPixKey?: boolean;
   withdrawAmount?: number;
-}
-
-function detectPixKeyType(key: string): PixKeyType {
-  const digits = key.replace(/\D/g, '');
-  if (digits.length === 11 && !key.includes('@')) return 'cpf';
-  if (key.includes('@')) return 'email';
-  if (/^\+?[\d\s\-()]{10,15}$/.test(key) && digits.length >= 10) return 'phone';
-  return 'random_key';
 }
 
 export function buildSacarScene(db: Db, mp: MercadoPagoService) {
   return new Scenes.WizardScene<BotContext>(
     SACAR_SCENE,
 
-    // Step 0 — valida pré-condições e pede valor ou chave PIX
+    // Step 0 — valida pré-condições e pede valor
     async ctx => {
       const user = ctx.session.user;
       if (!user) return ctx.scene.leave();
@@ -53,19 +45,19 @@ export function buildSacarScene(db: Db, mp: MercadoPagoService) {
         return ctx.scene.leave();
       }
 
-      // Se ainda não tem chave PIX, pede primeiro
+      // Chave PIX obrigatória — redireciona para cadastro via Minha Conta
       if (!user.pix_key) {
         await ctx.reply(
-          `🔑 *Configure sua chave PIX*\n\n` +
-            `Para sacar, informe sua chave PIX:\n` +
-            `_(CPF sem pontos, celular com DDD, e-mail ou chave aleatória)_`,
-          { parse_mode: 'Markdown' },
+          `🔑 *Cadastre sua chave PIX primeiro*\n\n` +
+            `Para sacar, acesse *Minha Conta → Minha Chave PIX* e cadastre sua chave antes de prosseguir.`,
+          {
+            parse_mode: 'Markdown',
+            reply_markup: kbMinhaConta().reply_markup,
+          },
         );
-        (ctx.scene.session as SacarSession).waitingForPixKey = true;
-        return ctx.wizard.next();
+        return ctx.scene.leave();
       }
 
-      // Já tem chave PIX — pede valor diretamente
       await ctx.reply(
         `💸 *Saque via PIX*\n\n` +
           `Saldo disponível: *${fmtBrl(user.virtual_balance)}*\n` +
@@ -74,39 +66,15 @@ export function buildSacarScene(db: Db, mp: MercadoPagoService) {
           `_Mínimo: ${fmtBrl(MIN_WITHDRAWAL)} · Máximo diário: ${fmtBrl(MAX_DAILY)}_`,
         { parse_mode: 'Markdown' },
       );
-      (ctx.scene.session as SacarSession).waitingForPixKey = false;
       return ctx.wizard.next();
     },
 
-    // Step 1 — registra chave PIX (se pedida) ou valida valor
+    // Step 1 — valida valor e apresenta confirmação
     async ctx => {
       const text = ctx.message && 'text' in ctx.message ? ctx.message.text.trim() : '';
       const user = ctx.session.user!;
       const session = ctx.scene.session as SacarSession;
 
-      if (session.waitingForPixKey) {
-        if (!text) {
-          await ctx.reply('Por favor, envie sua chave PIX como texto.');
-          return;
-        }
-        const pixKeyType = detectPixKeyType(text);
-        await db.users.updatePixKey(user.id, text, pixKeyType);
-        // Atualiza sessão com nova chave
-        ctx.session.user = { ...user, pix_key: text, pix_key_type: pixKeyType };
-        session.waitingForPixKey = false;
-
-        const balance = user.virtual_balance;
-        await ctx.reply(
-          `✅ Chave PIX salva!\n\n` +
-            `Saldo disponível: *${fmtBrl(balance)}*\n\n` +
-            `Qual valor deseja sacar?\n` +
-            `_Mínimo: ${fmtBrl(MIN_WITHDRAWAL)} · Máximo diário: ${fmtBrl(MAX_DAILY)}_`,
-          { parse_mode: 'Markdown' },
-        );
-        return; // permanece no step 1 aguardando o valor
-      }
-
-      // Valida o valor
       const amount = parseFloat(text.replace(',', '.'));
 
       if (isNaN(amount) || amount < MIN_WITHDRAWAL) {
@@ -142,10 +110,9 @@ export function buildSacarScene(db: Db, mp: MercadoPagoService) {
       }
 
       session.withdrawAmount = amount;
-      const pixKey = ctx.session.user?.pix_key ?? user.pix_key!;
 
       await ctx.reply(
-        `Confirma o saque de *${fmtBrl(amount)}*\npara a chave PIX \`${pixKey}\`?`,
+        `Confirma o saque de *${fmtBrl(amount)}*\npara a chave PIX \`${user.pix_key}\`?`,
         {
           parse_mode: 'Markdown',
           ...Markup.inlineKeyboard([
@@ -185,14 +152,39 @@ export async function handleSacarOk(
   const pixKey = user.pix_key!;
   const pixKeyType = (user.pix_key_type as PixKeyType) ?? 'random_key';
 
-  await ctx.editMessageText('⏳ Processando saque...');
+  await ctx.editMessageText('⏳ Verificando e processando saque...');
 
   try {
+    // Re-verifica saldo e limite diário diretamente do banco (evita race condition C-6)
+    const freshUser = await db.users.findById(user.id);
+    if (!freshUser || freshUser.virtual_balance < amount) {
+      await ctx.editMessageText('❌ Saldo insuficiente. Tente novamente.');
+      await ctx.scene.leave();
+      return;
+    }
+
+    const todayTotal = await db.pixWithdrawals.getTodayTotal(user.id);
+    if (todayTotal + amount > MAX_DAILY) {
+      const remaining = MAX_DAILY - todayTotal;
+      await ctx.editMessageText(
+        `❌ Limite diário excedido.\n` +
+          `Você ainda pode sacar *${fmtBrl(remaining > 0 ? remaining : 0)}* hoje.`,
+        { parse_mode: 'Markdown' },
+      );
+      await ctx.scene.leave();
+      return;
+    }
+
     const withdrawalId = crypto.randomUUID();
 
-    // Debita o saldo imediatamente (otimista — estorna se falhar)
-    const newBalance = user.virtual_balance - amount;
-    await db.users.updateBalance(user.id, newBalance);
+    // Debita atomicamente — protege contra race condition simultânea
+    const newBalance = await db.users.debitBalance(user.id, amount);
+    if (newBalance === null) {
+      await ctx.editMessageText('❌ Saldo insuficiente. Tente novamente.');
+      await ctx.scene.leave();
+      return;
+    }
+
     await db.transactions.create({
       user_id: user.id,
       type: 'withdrawal',
@@ -225,7 +217,6 @@ export async function handleSacarOk(
         completedAt: new Date(),
       });
 
-      // Atualiza saldo na sessão
       ctx.session.user = { ...user, virtual_balance: newBalance };
 
       await ctx.editMessageText(
@@ -235,13 +226,13 @@ export async function handleSacarOk(
         { parse_mode: 'Markdown' },
       );
     } catch (mpErr) {
-      // Estorna o saldo em caso de falha na transferência
-      await db.users.updateBalance(user.id, user.virtual_balance);
+      // Estorna atomicamente em caso de falha na transferência
+      const restoredBalance = await db.users.creditBalance(user.id, amount);
       await db.transactions.create({
         user_id: user.id,
         type: 'refund',
         amount,
-        balance_after: user.virtual_balance,
+        balance_after: restoredBalance,
         description: `Estorno de saque PIX com falha`,
       });
       await db.pixWithdrawals.updateStatus(withdrawal.id, 'failed', {

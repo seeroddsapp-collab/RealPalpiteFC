@@ -130,6 +130,15 @@ async function handlePixWebhook(
   res: http.ServerResponse,
 ): Promise<void> {
   try {
+    // C-1: Valida token de segurança na URL (?token=WEBHOOK_SECRET)
+    const webhookSecret = process.env.WEBHOOK_SECRET;
+    const url = new URL(req.url ?? '/', 'http://localhost');
+    if (!webhookSecret || url.searchParams.get('token') !== webhookSecret) {
+      res.writeHead(401);
+      res.end('Unauthorized');
+      return;
+    }
+
     const body = (await parseJsonBody(req)) as {
       type?: string;
       data?: { id?: string };
@@ -153,18 +162,26 @@ async function handlePixWebhook(
 
     // Localiza o depósito pelo ID do pagamento MP
     const deposit = await db.pixDeposits.findByMpPaymentId(mpPaymentId);
-    if (!deposit || deposit.status !== 'pending') {
+    if (!deposit) {
       res.writeHead(200);
       res.end('OK');
       return;
     }
 
-    // Credita o saldo do usuário
+    // C-2: Confirmação atômica — apenas se ainda estiver 'pending' (idempotente)
+    const confirmed = await db.pixDeposits.confirmIfPending(deposit.id, new Date());
+    if (!confirmed) {
+      // Já foi processado por um webhook anterior (retry do MP)
+      res.writeHead(200);
+      res.end('OK');
+      return;
+    }
+
+    // Credita o saldo atomicamente
     const user = await db.users.findById(deposit.user_id);
     if (!user) throw new Error(`User ${deposit.user_id} not found`);
 
-    const newBalance = user.virtual_balance + deposit.amount;
-    await db.users.updateBalance(user.id, newBalance);
+    const newBalance = await db.users.creditBalance(user.id, deposit.amount);
 
     await db.transactions.create({
       user_id: user.id,
@@ -173,8 +190,6 @@ async function handlePixWebhook(
       balance_after: newBalance,
       description: 'Depósito PIX confirmado',
     });
-
-    await db.pixDeposits.updateStatus(deposit.id, 'confirmed', new Date());
 
     // Notifica o usuário via Telegram
     bot.telegram
@@ -219,7 +234,7 @@ async function main() {
           res.end('OK');
           return;
         }
-        if (req.url === '/pix/webhook' && req.method === 'POST') {
+        if (req.url?.startsWith('/pix/webhook') && req.method === 'POST') {
           handlePixWebhook(req, res);
           return;
         }

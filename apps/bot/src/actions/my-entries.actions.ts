@@ -185,11 +185,12 @@ export function registerMyEntriesActions(bot: { action: (...args: unknown[]) => 
     await ctx.answerCbQuery();
 
     try {
-      const user       = ctx.session.user!;
-      const newBalance = user.virtual_balance + entry.amount;
+      const user = ctx.session.user!;
 
-      await db.entries.deleteById(entryId);
+      // 1. Credita o saldo antes de qualquer outra operação — dinheiro é prioridade
+      const newBalance = await db.users.creditBalance(user.id, entry.amount);
 
+      // 2. Registra o estorno
       await db.transactions.create({
         user_id:      user.id,
         type:         'refund',
@@ -199,7 +200,9 @@ export function registerMyEntriesActions(bot: { action: (...args: unknown[]) => 
         description:  `Cancelamento: ${match.home_team} × ${match.away_team}`,
       });
 
-      await db.users.updateBalance(user.id, newBalance);
+      // 3. Remove a entrada (se falhar, o saldo já foi devolvido e a transação registrada)
+      await db.entries.deleteById(entryId);
+
       ctx.session.user!.virtual_balance = newBalance;
 
       await safeEdit(ctx, msgCancelOk(entry.amount), {
