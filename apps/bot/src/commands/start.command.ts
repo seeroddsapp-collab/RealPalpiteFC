@@ -29,7 +29,7 @@ export function startCommand(db: Db) {
       return;
     }
 
-    await ctx.reply(msgWelcome(user.username, user.virtual_balance), {
+    await ctx.reply(msgWelcome(ctx.from?.first_name, user.username, user.virtual_balance), {
       parse_mode: 'Markdown',
       reply_markup: kbMainMenu().reply_markup,
     });

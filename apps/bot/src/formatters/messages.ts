@@ -54,12 +54,16 @@ export function decodePred(
 
 // ── Mensagens (todas usam Markdown v1) ─────────────────────────────────────
 
-export function msgWelcome(username: string | null | undefined, balance: number): string {
-  const name = username ? `@${username}` : 'jogador';
+export function msgWelcome(
+  firstName: string | null | undefined,
+  username: string | null | undefined,
+  balance: number,
+): string {
+  const name = firstName ?? (username ? `@${username}` : 'jogador');
   return (
-    `🎯 *Bem-vindo ao RealPalpiteFC, ${name}!*\n\n` +
-    `💰 Saldo atual: *${fmtBrl(balance)}*\n\n` +
-    `Use o menu abaixo para entrar em boloes e tentar multiplicar seus creditos!`
+    `⚽ *Ola, ${name}!*\n\n` +
+    `💰 Saldo disponivel: *${fmtBrl(balance)}*\n\n` +
+    `Pronto para palpitar? Escolha uma partida e tente multiplicar seus creditos. Boa sorte! 🤞`
   );
 }
 
