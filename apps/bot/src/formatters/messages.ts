@@ -104,6 +104,35 @@ export function msgMainMenu(balance: number): string {
   return `🏠 *Menu Principal*\n\n💰 Saldo: *${fmtBrl(balance)}*\n\nO que voce quer fazer?`;
 }
 
+export function msgMinhaConta(balance: number, pixKey: string | null): string {
+  const pixLine = pixKey
+    ? `🔑 Chave PIX: \`${pixKey}\``
+    : `🔑 Chave PIX: _não cadastrada_`;
+  return (
+    `💼 *Minha Conta*\n\n` +
+    `💰 Saldo: *${fmtBrl(balance)}*\n` +
+    `${pixLine}`
+  );
+}
+
+export function msgMinhaContaPixKey(pixKey: string | null, pixKeyType: string | null): string {
+  if (!pixKey) {
+    return (
+      `🔑 *Minha Chave PIX*\n\n` +
+      `Nenhuma chave cadastrada.\n\n` +
+      `_Cadastre sua chave para poder sacar seus ganhos._`
+    );
+  }
+  const tipos: Record<string, string> = {
+    cpf: 'CPF', phone: 'Celular', email: 'E-mail', random_key: 'Chave aleatória',
+  };
+  return (
+    `🔑 *Minha Chave PIX*\n\n` +
+    `Tipo: *${tipos[pixKeyType ?? ''] ?? pixKeyType}*\n` +
+    `Chave: \`${pixKey}\``
+  );
+}
+
 export function msgChampionships(): string {
   return (
     `🏆 *Escolha o campeonato:*\n\n` +

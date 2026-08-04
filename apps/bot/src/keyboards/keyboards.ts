@@ -8,8 +8,40 @@ export function kbMainMenu() {
     [Markup.button.callback('📋 Minhas Entradas', 'me')],
     [Markup.button.callback('🔒 Minhas Listas', 'my_pools')],
     [Markup.button.callback('➕ Criar Lista Privada', 'cp')],
+    [Markup.button.callback('💼 Minha Conta', 'minha_conta')],
     [Markup.button.callback('❓ Como Jogar', 'how_to_play')],
   ]);
+}
+
+export function kbMinhaConta() {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback('💰 Carteira', 'mc_carteira')],
+    [Markup.button.callback('📊 Extrato', 'mc_extrato')],
+    [Markup.button.callback('🔑 Minha Chave PIX', 'mc_pix_key')],
+    [Markup.button.callback('📋 Minhas Entradas', 'me')],
+    [Markup.button.callback('🏠 Menu', 'menu')],
+  ]);
+}
+
+export function kbMinhaContaCarteira(balance: number) {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback('📥 Depositar', 'carteira_depositar')],
+    [Markup.button.callback('📤 Sacar', 'carteira_sacar')],
+    [Markup.button.callback('⬅️ Minha Conta', 'minha_conta')],
+  ]);
+}
+
+export function kbMinhaContaPixKey(hasKey: boolean) {
+  const rows = hasKey
+    ? [
+        [Markup.button.callback('✏️ Alterar chave', 'mc_alterar_pix')],
+        [Markup.button.callback('⬅️ Minha Conta', 'minha_conta')],
+      ]
+    : [
+        [Markup.button.callback('➕ Cadastrar chave PIX', 'mc_alterar_pix')],
+        [Markup.button.callback('⬅️ Minha Conta', 'minha_conta')],
+      ];
+  return Markup.inlineKeyboard(rows);
 }
 
 export function kbChampionships(championships: ChampionshipRow[]) {

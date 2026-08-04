@@ -13,6 +13,7 @@ import { startCommand } from './commands/start.command';
 import { extratoCommand } from './commands/extrato.command';
 import { carteiraCommand, registerCarteiraActions } from './commands/carteira.command';
 import { registerMenuActions } from './actions/menu.actions';
+import { registerMinhaContaActions } from './actions/minha-conta.actions';
 import { registerMatchesActions } from './actions/matches.actions';
 import { registerPoolsActions } from './actions/pools.actions';
 import { registerMyEntriesActions } from './actions/my-entries.actions';
@@ -20,6 +21,7 @@ import { registerPrivatePoolsActions } from './actions/private-pools.actions';
 import { buildCreatePoolScene, CREATE_POOL_SCENE } from './scenes/create-pool.scene';
 import { buildDepositarScene, DEPOSITAR_SCENE } from './scenes/depositar.scene';
 import { buildSacarScene, SACAR_SCENE, handleSacarOk } from './scenes/sacar.scene';
+import { buildAlterarPixScene, ALTERAR_PIX_SCENE } from './scenes/alterar-pix.scene';
 import { startClosePoolsCron } from './cron/close-pools.cron';
 import { startCheckResultsCron } from './cron/check-results.cron';
 import { startMatchSyncCron } from './services/sync-matches.service';
@@ -57,10 +59,11 @@ const mp = new MercadoPagoService(MP_ACCESS_TOKEN ?? '');
 const bot = new Telegraf<BotContext>(TELEGRAM_BOT_TOKEN);
 
 // Scenes
-const createPoolScene = buildCreatePoolScene(db);
-const depositarScene  = buildDepositarScene(db, mp);
-const sacarScene      = buildSacarScene(db, mp);
-const stage = new Scenes.Stage<BotContext>([createPoolScene, depositarScene, sacarScene]);
+const createPoolScene  = buildCreatePoolScene(db);
+const depositarScene   = buildDepositarScene(db, mp);
+const sacarScene       = buildSacarScene(db, mp);
+const alterarPixScene  = buildAlterarPixScene(db);
+const stage = new Scenes.Stage<BotContext>([createPoolScene, depositarScene, sacarScene, alterarPixScene]);
 
 // Middleware (ordem importa)
 bot.use(session());
@@ -87,6 +90,7 @@ registerPoolsActions(bot as never, db);
 registerMyEntriesActions(bot as never, db);
 registerPrivatePoolsActions(bot as never, db);
 registerCarteiraActions(bot as never, db);
+registerMinhaContaActions(bot as never, db);
 
 // Ação para entrar na cena de criação de lista
 (bot as any).action('cp', (ctx: BotContext) => {
