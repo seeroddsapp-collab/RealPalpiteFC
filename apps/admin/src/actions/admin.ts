@@ -11,27 +11,30 @@ export async function triggerSync(): Promise<{ inserted: number; updated: number
     return { inserted: 0, updated: 0, error: 'BOT_URL ou BOT_SYNC_SECRET não configurados no Vercel.' }
   }
 
-  const res = await fetch(`${botUrl}/api/sync`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${syncSecret}` },
-    // aguarda até 60s — sync pode demorar
-    signal: AbortSignal.timeout(60_000),
-  })
+  try {
+    const res = await fetch(`${botUrl}/api/sync`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${syncSecret}` },
+      signal: AbortSignal.timeout(90_000),
+    })
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.status.toString())
-    return { inserted: 0, updated: 0, error: `Bot respondeu ${res.status}: ${text}` }
-  }
+    if (!res.ok) {
+      const text = await res.text().catch(() => String(res.status))
+      return { inserted: 0, updated: 0, error: `Bot respondeu ${res.status}: ${text}` }
+    }
 
-  const data = await res.json() as { inserted: number; updated: number; errors: string[] }
+    const data = await res.json() as { inserted: number; updated: number; errors: string[] }
 
-  revalidatePath('/dashboard/campeonatos')
-  revalidatePath('/dashboard/partidas')
+    revalidatePath('/dashboard/campeonatos')
+    revalidatePath('/dashboard/partidas')
 
-  return {
-    inserted: data.inserted,
-    updated: data.updated,
-    error: data.errors?.length > 0 ? data.errors.join(' | ') : undefined,
+    return {
+      inserted: data.inserted,
+      updated: data.updated,
+      error: data.errors?.length > 0 ? data.errors.join(' | ') : undefined,
+    }
+  } catch (err) {
+    return { inserted: 0, updated: 0, error: `Erro ao contactar bot: ${String(err)}` }
   }
 }
 
