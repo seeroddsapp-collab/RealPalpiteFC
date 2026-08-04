@@ -4,12 +4,11 @@ import { createAdminClient } from '@/lib/supabase-admin'
 
 const PAGE_SIZE = 50
 
-type SearchParams = { page?: string; tab?: string }
+type SearchParams = { page?: string; tab?: string; type?: string }
 
 function fmtBrl(n: number) {
   return `R$ ${n.toFixed(2).replace('.', ',')}`
 }
-
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleString('pt-BR', {
     day: '2-digit', month: '2-digit', year: '2-digit',
@@ -19,230 +18,401 @@ function fmtDate(iso: string) {
 }
 
 const DEPOSIT_STATUS_CSS: Record<string, string> = {
-  pending:   'bg-amber-50 text-amber-700 border-amber-200',
-  confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
-  expired:   'bg-red-50 text-red-700 border-red-200',
-  cancelled: 'bg-red-50 text-red-700 border-red-200',
+  pending:   'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  confirmed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  expired:   'bg-red-500/10 text-red-400 border-red-500/20',
+  cancelled: 'bg-red-500/10 text-red-400 border-red-500/20',
 }
 const DEPOSIT_STATUS_LABEL: Record<string, string> = {
   pending: 'Pendente', confirmed: 'Confirmado', expired: 'Expirado', cancelled: 'Cancelado',
 }
 const WITHDRAWAL_STATUS_CSS: Record<string, string> = {
-  processing: 'bg-amber-50 text-amber-700 border-amber-200',
-  completed:  'bg-blue-50 text-blue-700 border-blue-200',
-  failed:     'bg-red-50 text-red-700 border-red-200',
+  processing: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  completed:  'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  failed:     'bg-red-500/10 text-red-400 border-red-500/20',
 }
 const WITHDRAWAL_STATUS_LABEL: Record<string, string> = {
   processing: 'Processando', completed: 'Concluído', failed: 'Falhou',
 }
+const TX_TYPE_CSS: Record<string, string> = {
+  entry:    'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  prize:    'bg-gold-500/10 text-gold-400 border-gold-500/20',
+  refund:   'bg-slate-500/10 text-slate-400 border-slate-500/20',
+  deposit:  'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  withdraw: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+}
+const TX_TYPE_LABEL: Record<string, string> = {
+  entry: 'Entrada', prize: 'Prêmio', refund: 'Devolução', deposit: 'Depósito', withdraw: 'Saque',
+}
 
-function StatusChip({ css, label }: { css: string; label: string }) {
+function Chip({ css, label }: { css: string; label: string }) {
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${css}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${css}`}>
       {label}
     </span>
   )
 }
 
+function KpiCard({
+  label, value, sub, color = 'text-slate-200',
+}: { label: string; value: string; sub?: string; color?: string }) {
+  return (
+    <div className="bg-navy-800 rounded-xl p-4 border border-navy-700 flex flex-col gap-1">
+      <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">{label}</p>
+      <p className={`text-xl font-bold font-mono ${color}`}>{value}</p>
+      {sub && <p className="text-xs text-slate-500">{sub}</p>}
+    </div>
+  )
+}
+
+// SVG bar chart — rendered server-side, no JS required
+function FlowChart({ data }: { data: Array<{ label: string; dep: number; wit: number }> }) {
+  const W = 700
+  const H = 140
+  const PAD = { top: 12, right: 12, bottom: 28, left: 52 }
+  const chartW = W - PAD.left - PAD.right
+  const chartH = H - PAD.top - PAD.bottom
+  const maxVal = Math.max(...data.map(d => Math.max(d.dep, d.wit)), 1)
+  const barSlot = chartW / data.length
+  const groupW = Math.max(barSlot * 0.7, 2)
+  const barW = groupW / 2 - 1
+
+  const yTicks = [0, 0.25, 0.5, 0.75, 1]
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 140 }}>
+      {/* Grid lines */}
+      {yTicks.map(t => {
+        const y = PAD.top + chartH * (1 - t)
+        const val = maxVal * t
+        return (
+          <g key={t}>
+            <line x1={PAD.left} x2={W - PAD.right} y1={y} y2={y} stroke="#1e293b" strokeWidth={1} />
+            <text x={PAD.left - 4} y={y + 4} textAnchor="end" fontSize={9} fill="#64748b">
+              {val === 0 ? 'R$0' : val >= 1000 ? `R$${(val / 1000).toFixed(0)}k` : `R$${val.toFixed(0)}`}
+            </text>
+          </g>
+        )
+      })}
+
+      {/* Bars */}
+      {data.map((d, i) => {
+        const cx = PAD.left + i * barSlot + barSlot / 2
+        const depH = Math.max((d.dep / maxVal) * chartH, d.dep > 0 ? 2 : 0)
+        const witH = Math.max((d.wit / maxVal) * chartH, d.wit > 0 ? 2 : 0)
+        const showLabel = data.length <= 30 && i % Math.ceil(data.length / 10) === 0
+
+        return (
+          <g key={d.label}>
+            <rect x={cx - groupW / 2} y={PAD.top + chartH - depH} width={barW} height={depH} fill="#10b981" opacity={0.85} rx={1} />
+            <rect x={cx} y={PAD.top + chartH - witH} width={barW} height={witH} fill="#f43f5e" opacity={0.85} rx={1} />
+            {showLabel && (
+              <text x={cx} y={H - 4} textAnchor="middle" fontSize={8} fill="#64748b">
+                {d.label.slice(5)}
+              </text>
+            )}
+          </g>
+        )
+      })}
+
+      {/* Legend */}
+      <rect x={PAD.left} y={2} width={8} height={8} fill="#10b981" rx={1} />
+      <text x={PAD.left + 10} y={10} fontSize={9} fill="#94a3b8">Depósitos</text>
+      <rect x={PAD.left + 70} y={2} width={8} height={8} fill="#f43f5e" rx={1} />
+      <text x={PAD.left + 82} y={10} fontSize={9} fill="#94a3b8">Saques</text>
+    </svg>
+  )
+}
+
+function buildDailyData(
+  deposits: Array<{ amount: number; confirmed_at: string | null }>,
+  withdrawals: Array<{ amount: number; created_at: string }>,
+  days: number,
+) {
+  const now = new Date()
+  return Array.from({ length: days }, (_, i) => {
+    const d = new Date(now)
+    d.setDate(d.getDate() - (days - 1 - i))
+    const dateStr = d.toISOString().slice(0, 10)
+    const dep = deposits.filter(x => x.confirmed_at?.slice(0, 10) === dateStr).reduce((s, x) => s + x.amount, 0)
+    const wit = withdrawals.filter(x => x.created_at.slice(0, 10) === dateStr).reduce((s, x) => s + x.amount, 0)
+    return { label: dateStr, dep, wit }
+  })
+}
+
 export default async function FinanceiroPage({ searchParams }: { searchParams: SearchParams }) {
-  const supabase = createAdminClient()
+  const db = createAdminClient()
   const tab  = searchParams.tab ?? 'depositos'
   const page = Math.max(1, Number(searchParams.page ?? 1))
+  const txType = searchParams.type ?? 'all'
   const from = (page - 1) * PAGE_SIZE
   const to   = from + PAGE_SIZE - 1
 
-  // Stats globais
-  const [{ data: totalDepositedRow }, { data: totalWithdrawnRow }, { count: totalUsers }] =
-    await Promise.all([
-      supabase
-        .from('pix_deposits')
-        .select('amount')
-        .eq('status', 'confirmed'),
-      supabase
-        .from('pix_withdrawals')
-        .select('amount')
-        .eq('status', 'completed'),
-      supabase.from('users').select('*', { count: 'exact', head: true }),
-    ])
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-  const totalDeposited = (totalDepositedRow ?? []).reduce((s: number, r: { amount: number }) => s + r.amount, 0)
-  const totalWithdrawn = (totalWithdrawnRow ?? []).reduce((s: number, r: { amount: number }) => s + r.amount, 0)
-  const net = totalDeposited - totalWithdrawn
+  // ── KPIs ──────────────────────────────────────────────────────────────────
+  const [
+    { data: confirmedDeps },
+    { data: completedWits },
+    { data: pendingDeps },
+    { data: processingWits },
+    { data: entryTxs },
+    { data: prizeTxs },
+    { data: refundTxs },
+    { data: userBalances },
+    { count: totalUsers },
+    // Chart data
+    { data: recentDeps },
+    { data: recentWits },
+  ] = await Promise.all([
+    db.from('pix_deposits').select('amount').eq('status', 'confirmed'),
+    db.from('pix_withdrawals').select('amount').eq('status', 'completed'),
+    db.from('pix_deposits').select('amount').eq('status', 'pending'),
+    db.from('pix_withdrawals').select('amount').eq('status', 'processing'),
+    db.from('transactions').select('amount').eq('type', 'entry'),
+    db.from('transactions').select('amount').eq('type', 'prize'),
+    db.from('transactions').select('amount').eq('type', 'refund'),
+    db.from('users').select('virtual_balance'),
+    db.from('users').select('*', { count: 'exact', head: true }),
+    db.from('pix_deposits').select('amount,confirmed_at').eq('status', 'confirmed').gte('confirmed_at', thirtyDaysAgo.toISOString()),
+    db.from('pix_withdrawals').select('amount,created_at').eq('status', 'completed').gte('created_at', thirtyDaysAgo.toISOString()),
+  ])
 
-  // Dados da aba ativa
-  let deposits: any[] = [], withdrawals: any[] = [], count = 0
+  const sum = (arr: Array<{ amount: number }> | null) => (arr ?? []).reduce((s, r) => s + r.amount, 0)
+
+  const totalDeposited  = sum(confirmedDeps)
+  const totalWithdrawn  = sum(completedWits)
+  const pendingAmt      = sum(pendingDeps)
+  const processingAmt   = sum(processingWits)
+  const arrecadacao     = sum(entryTxs)
+  const premios         = sum(prizeTxs)
+  const devolucoes      = sum(refundTxs)
+  const receita         = arrecadacao - premios - devolucoes
+  const custodia        = (userBalances ?? []).reduce((s, u) => s + (u.virtual_balance ?? 0), 0)
+  const net             = totalDeposited - totalWithdrawn
+
+  const chartData = buildDailyData(recentDeps ?? [], recentWits ?? [], 30)
+
+  // ── Tabelas ────────────────────────────────────────────────────────────────
+  let deposits: any[] = [], withdrawals: any[] = [], transactions: any[] = [], count = 0
 
   if (tab === 'depositos') {
-    const { data, count: c, error } = await supabase
+    const { data, count: c } = await db
       .from('pix_deposits')
       .select('*, users(username, telegram_id)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to)
-    if (!error) { deposits = data ?? []; count = c ?? 0 }
-  } else {
-    const { data, count: c, error } = await supabase
+    deposits = data ?? []; count = c ?? 0
+
+  } else if (tab === 'saques') {
+    const { data, count: c } = await db
       .from('pix_withdrawals')
       .select('*, users(username, telegram_id)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to)
-    if (!error) { withdrawals = data ?? []; count = c ?? 0 }
+    withdrawals = data ?? []; count = c ?? 0
+
+  } else {
+    let q = db
+      .from('transactions')
+      .select('*, users(username, telegram_id)', { count: 'exact' })
+      .order('created_at', { ascending: false })
+    if (txType !== 'all') q = q.eq('type', txType)
+    const { data, count: c } = await q.range(from, to)
+    transactions = data ?? []; count = c ?? 0
   }
 
   const totalPages = Math.ceil(count / PAGE_SIZE)
 
-  function buildUrl(p: number, t = tab) {
-    return `/dashboard/financeiro?tab=${t}&page=${p}`
+  function url(p: number, t = tab, ty = txType) {
+    return `/dashboard/financeiro?tab=${t}&page=${p}&type=${ty}`
   }
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gold-400">Financeiro</h1>
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-navy-800 rounded-lg p-4 border border-navy-700">
-          <p className="text-xs text-slate-400 mb-1">Total Depositado</p>
-          <p className="text-xl font-bold text-emerald-400">{fmtBrl(totalDeposited)}</p>
-        </div>
-        <div className="bg-navy-800 rounded-lg p-4 border border-navy-700">
-          <p className="text-xs text-slate-400 mb-1">Total Sacado</p>
-          <p className="text-xl font-bold text-rose-400">{fmtBrl(totalWithdrawn)}</p>
-        </div>
-        <div className="bg-navy-800 rounded-lg p-4 border border-navy-700">
-          <p className="text-xs text-slate-400 mb-1">Saldo Líquido</p>
-          <p className={`text-xl font-bold ${net >= 0 ? 'text-gold-400' : 'text-rose-400'}`}>
-            {fmtBrl(net)}
-          </p>
-        </div>
-        <div className="bg-navy-800 rounded-lg p-4 border border-navy-700">
-          <p className="text-xs text-slate-400 mb-1">Usuários</p>
-          <p className="text-xl font-bold text-slate-200">{totalUsers ?? 0}</p>
+      {/* ── Seção 1: Fluxo PIX ── */}
+      <div>
+        <p className="text-xs text-slate-500 uppercase tracking-widest mb-3 font-semibold">Fluxo PIX</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiCard label="Total Depositado" value={fmtBrl(totalDeposited)} color="text-emerald-400" />
+          <KpiCard label="Total Sacado"     value={fmtBrl(totalWithdrawn)} color="text-rose-400" />
+          <KpiCard label="Saldo Líquido"    value={fmtBrl(net)}            color={net >= 0 ? 'text-gold-400' : 'text-rose-400'} />
+          <KpiCard label="Custódia"         value={fmtBrl(custodia)}       sub={`${totalUsers ?? 0} usuários`} color="text-slate-200" />
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-navy-700">
-        {['depositos', 'saques'].map(t => (
-          <a
-            key={t}
-            href={buildUrl(1, t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors capitalize ${
-              tab === t
-                ? 'border-gold-500 text-gold-400'
-                : 'border-transparent text-slate-400 hover:text-gold-400'
-            }`}
-          >
-            {t === 'depositos' ? 'Depósitos' : 'Saques'}
-          </a>
-        ))}
+      {/* ── Seção 2: Negócio ── */}
+      <div>
+        <p className="text-xs text-slate-500 uppercase tracking-widest mb-3 font-semibold">Bolões</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiCard label="Arrecadação"       value={fmtBrl(arrecadacao)} sub="Total de entradas"    color="text-blue-400" />
+          <KpiCard label="Prêmios Pagos"     value={fmtBrl(premios)}     sub="Distribuído a vencedores" color="text-amber-400" />
+          <KpiCard label="Devoluções"        value={fmtBrl(devolucoes)}  sub="Sem acertador / cancelado" color="text-slate-400" />
+          <KpiCard label="Receita Plataforma" value={fmtBrl(receita)}    sub="Arrecadação − prêmios − devoluções" color={receita >= 0 ? 'text-gold-400' : 'text-rose-400'} />
+        </div>
       </div>
 
-      {/* Tabela de Depósitos */}
-      {tab === 'depositos' && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-400 border-b border-navy-700">
-                <th className="pb-3 pr-4">Usuário</th>
-                <th className="pb-3 pr-4">Valor</th>
-                <th className="pb-3 pr-4">Status</th>
-                <th className="pb-3 pr-4">Data</th>
-                <th className="pb-3">Confirmado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {deposits.map((d: any) => (
-                <tr key={d.id} className="border-b border-navy-700/50 hover:bg-navy-800/40">
-                  <td className="py-3 pr-4 text-slate-300">
-                    @{d.users?.username ?? d.users?.telegram_id ?? '—'}
-                  </td>
-                  <td className="py-3 pr-4 font-medium text-emerald-400">{fmtBrl(d.amount)}</td>
-                  <td className="py-3 pr-4">
-                    <StatusChip
-                      css={DEPOSIT_STATUS_CSS[d.status] ?? 'bg-slate-100 text-slate-600 border-slate-200'}
-                      label={DEPOSIT_STATUS_LABEL[d.status] ?? d.status}
-                    />
-                  </td>
-                  <td className="py-3 pr-4 text-slate-400 text-xs">{fmtDate(d.created_at)}</td>
-                  <td className="py-3 text-slate-400 text-xs">
-                    {d.confirmed_at ? fmtDate(d.confirmed_at) : '—'}
-                  </td>
-                </tr>
-              ))}
-              {deposits.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-500">
-                    Nenhum depósito encontrado.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {/* ── Seção 3: Pendências ── */}
+      <div>
+        <p className="text-xs text-slate-500 uppercase tracking-widest mb-3 font-semibold">Pendências</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-navy-800 rounded-xl p-4 border border-amber-500/20 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-400 font-medium">Depósitos Pendentes</p>
+              <p className="text-lg font-bold text-amber-400 font-mono">{fmtBrl(pendingAmt)}</p>
+            </div>
+            <span className="text-2xl font-bold text-amber-500/40">{(pendingDeps ?? []).length}</span>
+          </div>
+          <div className="bg-navy-800 rounded-xl p-4 border border-amber-500/20 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-400 font-medium">Saques em Processamento</p>
+              <p className="text-lg font-bold text-amber-400 font-mono">{fmtBrl(processingAmt)}</p>
+            </div>
+            <span className="text-2xl font-bold text-amber-500/40">{(processingWits ?? []).length}</span>
+          </div>
         </div>
-      )}
+      </div>
 
-      {/* Tabela de Saques */}
-      {tab === 'saques' && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-400 border-b border-navy-700">
-                <th className="pb-3 pr-4">Usuário</th>
-                <th className="pb-3 pr-4">Valor</th>
-                <th className="pb-3 pr-4">Chave PIX</th>
-                <th className="pb-3 pr-4">Status</th>
-                <th className="pb-3">Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              {withdrawals.map((w: any) => (
-                <tr key={w.id} className="border-b border-navy-700/50 hover:bg-navy-800/40">
-                  <td className="py-3 pr-4 text-slate-300">
-                    @{w.users?.username ?? w.users?.telegram_id ?? '—'}
-                  </td>
-                  <td className="py-3 pr-4 font-medium text-rose-400">{fmtBrl(w.amount)}</td>
-                  <td className="py-3 pr-4 text-slate-400 font-mono text-xs">
-                    {w.pix_key} <span className="text-slate-600">({w.pix_key_type})</span>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <StatusChip
-                      css={WITHDRAWAL_STATUS_CSS[w.status] ?? 'bg-slate-100 text-slate-600 border-slate-200'}
-                      label={WITHDRAWAL_STATUS_LABEL[w.status] ?? w.status}
-                    />
-                  </td>
-                  <td className="py-3 text-slate-400 text-xs">{fmtDate(w.created_at)}</td>
-                </tr>
-              ))}
-              {withdrawals.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-500">
-                    Nenhum saque encontrado.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {/* ── Seção 4: Gráfico ── */}
+      <div className="bg-navy-800 rounded-xl p-4 border border-navy-700">
+        <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-3">
+          Fluxo Últimos 30 Dias
+        </p>
+        <FlowChart data={chartData} />
+      </div>
 
-      {/* Paginação */}
-      {totalPages > 1 && (
-        <div className="flex gap-2 justify-center pt-2">
-          {page > 1 && (
-            <a href={buildUrl(page - 1)} className="px-3 py-1 rounded bg-navy-800 text-slate-300 hover:bg-navy-700 text-sm">
-              ← Anterior
+      {/* ── Seção 5: Tabelas ── */}
+      <div>
+        <div className="flex gap-1 border-b border-navy-700 mb-4">
+          {(['depositos', 'saques', 'transacoes'] as const).map(t => (
+            <a key={t} href={url(1, t)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                tab === t ? 'border-gold-500 text-gold-400' : 'border-transparent text-slate-400 hover:text-gold-400'
+              }`}
+            >
+              {t === 'depositos' ? 'Depósitos' : t === 'saques' ? 'Saques' : 'Transações'}
             </a>
-          )}
-          <span className="px-3 py-1 text-slate-400 text-sm">
-            {page} / {totalPages}
-          </span>
-          {page < totalPages && (
-            <a href={buildUrl(page + 1)} className="px-3 py-1 rounded bg-navy-800 text-slate-300 hover:bg-navy-700 text-sm">
-              Próxima →
-            </a>
-          )}
+          ))}
         </div>
-      )}
+
+        {/* Depósitos */}
+        {tab === 'depositos' && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-slate-400 border-b border-navy-700">
+                  <th className="pb-3 pr-4">Usuário</th>
+                  <th className="pb-3 pr-4">Valor</th>
+                  <th className="pb-3 pr-4">Status</th>
+                  <th className="pb-3 pr-4">Criado</th>
+                  <th className="pb-3">Confirmado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deposits.map((d: any) => (
+                  <tr key={d.id} className="border-b border-navy-700/50 hover:bg-navy-800/40">
+                    <td className="py-3 pr-4 text-slate-300">@{d.users?.username ?? d.users?.telegram_id ?? '—'}</td>
+                    <td className="py-3 pr-4 font-mono font-medium text-emerald-400">{fmtBrl(d.amount)}</td>
+                    <td className="py-3 pr-4"><Chip css={DEPOSIT_STATUS_CSS[d.status] ?? ''} label={DEPOSIT_STATUS_LABEL[d.status] ?? d.status} /></td>
+                    <td className="py-3 pr-4 text-slate-400 text-xs">{fmtDate(d.created_at)}</td>
+                    <td className="py-3 text-slate-400 text-xs">{d.confirmed_at ? fmtDate(d.confirmed_at) : '—'}</td>
+                  </tr>
+                ))}
+                {deposits.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-slate-500">Nenhum depósito.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Saques */}
+        {tab === 'saques' && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-slate-400 border-b border-navy-700">
+                  <th className="pb-3 pr-4">Usuário</th>
+                  <th className="pb-3 pr-4">Valor</th>
+                  <th className="pb-3 pr-4">Chave PIX</th>
+                  <th className="pb-3 pr-4">Status</th>
+                  <th className="pb-3">Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                {withdrawals.map((w: any) => (
+                  <tr key={w.id} className="border-b border-navy-700/50 hover:bg-navy-800/40">
+                    <td className="py-3 pr-4 text-slate-300">@{w.users?.username ?? w.users?.telegram_id ?? '—'}</td>
+                    <td className="py-3 pr-4 font-mono font-medium text-rose-400">{fmtBrl(w.amount)}</td>
+                    <td className="py-3 pr-4 text-slate-400 font-mono text-xs">{w.pix_key} <span className="text-slate-600">({w.pix_key_type})</span></td>
+                    <td className="py-3 pr-4"><Chip css={WITHDRAWAL_STATUS_CSS[w.status] ?? ''} label={WITHDRAWAL_STATUS_LABEL[w.status] ?? w.status} /></td>
+                    <td className="py-3 text-slate-400 text-xs">{fmtDate(w.created_at)}</td>
+                  </tr>
+                ))}
+                {withdrawals.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-slate-500">Nenhum saque.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Transações */}
+        {tab === 'transacoes' && (
+          <div className="space-y-3">
+            {/* Filtro por tipo */}
+            <div className="flex gap-2 flex-wrap">
+              {(['all', 'entry', 'prize', 'refund', 'deposit', 'withdraw'] as const).map(t => (
+                <a key={t} href={url(1, 'transacoes', t)}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-semibold border transition-colors ${
+                    txType === t
+                      ? 'bg-gold-500/20 text-gold-400 border-gold-500/40'
+                      : 'bg-navy-700 text-slate-400 border-navy-600 hover:text-gold-400'
+                  }`}
+                >
+                  {t === 'all' ? 'Todas' : TX_TYPE_LABEL[t] ?? t}
+                </a>
+              ))}
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-slate-400 border-b border-navy-700">
+                    <th className="pb-3 pr-4">Usuário</th>
+                    <th className="pb-3 pr-4">Tipo</th>
+                    <th className="pb-3 pr-4">Valor</th>
+                    <th className="pb-3 pr-4">Saldo após</th>
+                    <th className="pb-3 pr-4">Descrição</th>
+                    <th className="pb-3">Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.map((tx: any) => (
+                    <tr key={tx.id} className="border-b border-navy-700/50 hover:bg-navy-800/40">
+                      <td className="py-3 pr-4 text-slate-300">@{tx.users?.username ?? tx.users?.telegram_id ?? '—'}</td>
+                      <td className="py-3 pr-4"><Chip css={TX_TYPE_CSS[tx.type] ?? ''} label={TX_TYPE_LABEL[tx.type] ?? tx.type} /></td>
+                      <td className="py-3 pr-4 font-mono font-medium text-slate-200">{fmtBrl(tx.amount)}</td>
+                      <td className="py-3 pr-4 font-mono text-slate-400 text-xs">{fmtBrl(tx.balance_after)}</td>
+                      <td className="py-3 pr-4 text-slate-500 text-xs max-w-48 truncate">{tx.description ?? '—'}</td>
+                      <td className="py-3 text-slate-400 text-xs">{fmtDate(tx.created_at)}</td>
+                    </tr>
+                  ))}
+                  {transactions.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-slate-500">Nenhuma transação.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Paginação */}
+        {totalPages > 1 && (
+          <div className="flex gap-2 justify-center pt-4">
+            {page > 1 && <a href={url(page - 1)} className="px-3 py-1 rounded bg-navy-800 text-slate-300 hover:bg-navy-700 text-sm">← Anterior</a>}
+            <span className="px-3 py-1 text-slate-400 text-sm">{page} / {totalPages}</span>
+            {page < totalPages && <a href={url(page + 1)} className="px-3 py-1 rounded bg-navy-800 text-slate-300 hover:bg-navy-700 text-sm">Próxima →</a>}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
