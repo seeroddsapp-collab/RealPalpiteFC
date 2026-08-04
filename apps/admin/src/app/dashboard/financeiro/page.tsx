@@ -6,6 +6,11 @@ const PAGE_SIZE = 50
 
 type SearchParams = { page?: string; tab?: string; type?: string }
 
+type UserRef = { username: string | null; telegram_id: number } | null
+type DepositRow    = { id: string; amount: number; status: string; created_at: string; confirmed_at: string | null; users: UserRef }
+type WithdrawalRow = { id: string; amount: number; status: string; created_at: string; pix_key: string; pix_key_type: string; users: UserRef }
+type TxRow         = { id: string; amount: number; balance_after: number; type: string; description: string | null; created_at: string; users: UserRef }
+
 function fmtBrl(n: number) {
   return `R$ ${n.toFixed(2).replace('.', ',')}`
 }
@@ -140,11 +145,12 @@ function buildDailyData(
   })
 }
 
-export default async function FinanceiroPage({ searchParams }: { searchParams: SearchParams }) {
+export default async function FinanceiroPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const db = createAdminClient()
-  const tab  = searchParams.tab ?? 'depositos'
-  const page = Math.max(1, Number(searchParams.page ?? 1))
-  const txType = searchParams.type ?? 'all'
+  const sp = await searchParams
+  const tab  = sp.tab ?? 'depositos'
+  const page = Math.max(1, Number(sp.page ?? 1))
+  const txType = sp.type ?? 'all'
   const from = (page - 1) * PAGE_SIZE
   const to   = from + PAGE_SIZE - 1
 
@@ -195,7 +201,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: S
   const chartData = buildDailyData(recentDeps ?? [], recentWits ?? [], 30)
 
   // ── Tabelas ────────────────────────────────────────────────────────────────
-  let deposits: any[] = [], withdrawals: any[] = [], transactions: any[] = [], count = 0
+  let deposits: DepositRow[] = [], withdrawals: WithdrawalRow[] = [], transactions: TxRow[] = [], count = 0
 
   if (tab === 'depositos') {
     const { data, count: c } = await db
@@ -203,7 +209,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: S
       .select('*, users(username, telegram_id)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to)
-    deposits = data ?? []; count = c ?? 0
+    deposits = (data ?? []) as unknown as DepositRow[]; count = c ?? 0
 
   } else if (tab === 'saques') {
     const { data, count: c } = await db
@@ -211,7 +217,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: S
       .select('*, users(username, telegram_id)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to)
-    withdrawals = data ?? []; count = c ?? 0
+    withdrawals = (data ?? []) as unknown as WithdrawalRow[]; count = c ?? 0
 
   } else {
     let q = db
@@ -220,7 +226,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: S
       .order('created_at', { ascending: false })
     if (txType !== 'all') q = q.eq('type', txType)
     const { data, count: c } = await q.range(from, to)
-    transactions = data ?? []; count = c ?? 0
+    transactions = (data ?? []) as unknown as TxRow[]; count = c ?? 0
   }
 
   const totalPages = Math.ceil(count / PAGE_SIZE)
@@ -312,7 +318,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: S
                 </tr>
               </thead>
               <tbody>
-                {deposits.map((d: any) => (
+                {deposits.map((d: DepositRow) => (
                   <tr key={d.id} className="border-b border-navy-700/50 hover:bg-navy-800/40">
                     <td className="py-3 pr-4 text-slate-300">@{d.users?.username ?? d.users?.telegram_id ?? '—'}</td>
                     <td className="py-3 pr-4 font-mono font-medium text-emerald-400">{fmtBrl(d.amount)}</td>
@@ -341,7 +347,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: S
                 </tr>
               </thead>
               <tbody>
-                {withdrawals.map((w: any) => (
+                {withdrawals.map((w: WithdrawalRow) => (
                   <tr key={w.id} className="border-b border-navy-700/50 hover:bg-navy-800/40">
                     <td className="py-3 pr-4 text-slate-300">@{w.users?.username ?? w.users?.telegram_id ?? '—'}</td>
                     <td className="py-3 pr-4 font-mono font-medium text-rose-400">{fmtBrl(w.amount)}</td>
@@ -387,7 +393,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: S
                   </tr>
                 </thead>
                 <tbody>
-                  {transactions.map((tx: any) => (
+                  {transactions.map((tx: TxRow) => (
                     <tr key={tx.id} className="border-b border-navy-700/50 hover:bg-navy-800/40">
                       <td className="py-3 pr-4 text-slate-300">@{tx.users?.username ?? tx.users?.telegram_id ?? '—'}</td>
                       <td className="py-3 pr-4"><Chip css={TX_TYPE_CSS[tx.type] ?? ''} label={TX_TYPE_LABEL[tx.type] ?? tx.type} /></td>

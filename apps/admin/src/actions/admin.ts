@@ -27,32 +27,38 @@ async function fetchEspnMatches(leagueCode: string, daysAhead: number) {
   const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/scoreboard?dates=${fmt(now)}-${fmt(end)}&limit=100`
   const res = await fetch(url, { headers: { 'User-Agent': 'RealPalpiteFC/1.0' } })
   if (!res.ok) throw new Error(`ESPN HTTP ${res.status}`)
-  const data: any = await res.json()
-  return ((data.events ?? []) as any[]).map((event: any) => {
-    const comp = event.competitions?.[0]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data = await res.json() as Record<string, any>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data['events'] ?? []) as Record<string, any>[]).map((event) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const comp = (event['competitions'] as Record<string, any>[] | undefined)?.[0]
     if (!comp) return null
-    const home = comp.competitors?.find((c: any) => c.homeAway === 'home')
-    const away = comp.competitors?.find((c: any) => c.homeAway === 'away')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const competitors = comp['competitors'] as Record<string, any>[] | undefined
+    const home = competitors?.find(c => c['homeAway'] === 'home')
+    const away = competitors?.find(c => c['homeAway'] === 'away')
     if (!home || !away) return null
-    const sn = comp.status?.type?.name ?? ''
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sn = (comp['status'] as Record<string, any>)?.['type']?.['name'] as string ?? ''
     const status =
       ['STATUS_FINAL', 'STATUS_FULL_TIME'].includes(sn) ? 'finished' :
       ['STATUS_IN_PROGRESS', 'STATUS_HALFTIME', 'STATUS_END_PERIOD'].includes(sn) ? 'in_progress' :
       sn === 'STATUS_POSTPONED' ? 'postponed' :
       ['STATUS_CANCELED', 'STATUS_CANCELLED', 'STATUS_SUSPENDED'].includes(sn) ? 'cancelled' : 'scheduled'
-    const hs = home.score !== undefined ? parseInt(home.score, 10) : undefined
-    const as_ = away.score !== undefined ? parseInt(away.score, 10) : undefined
+    const hs = home['score'] !== undefined ? parseInt(home['score'] as string, 10) : undefined
+    const as_ = away['score'] !== undefined ? parseInt(away['score'] as string, 10) : undefined
     return {
-      providerId: event.id as string,
-      homeTeam: home.team.displayName as string,
-      awayTeam: away.team.displayName as string,
-      kickoffAt: new Date(event.date),
+      providerId: event['id'] as string,
+      homeTeam: (home['team'] as Record<string, string>)['displayName'],
+      awayTeam: (away['team'] as Record<string, string>)['displayName'],
+      kickoffAt: new Date(event['date'] as string),
       status,
       score: hs !== undefined && as_ !== undefined && !isNaN(hs) && !isNaN(as_) ? { homeScore: hs, awayScore: as_ } : undefined,
-      homeTeamLogoUrl: (home.team.logo as string) ?? null,
-      awayTeamLogoUrl: (away.team.logo as string) ?? null,
+      homeTeamLogoUrl: ((home['team'] as Record<string, string>)['logo']) ?? null,
+      awayTeamLogoUrl: ((away['team'] as Record<string, string>)['logo']) ?? null,
     }
-  }).filter(Boolean) as NonNullable<ReturnType<typeof Array.prototype.filter>[number]>[]
+  }).filter((m): m is NonNullable<typeof m> => m !== null)
 }
 
 export async function triggerSync(): Promise<{ inserted: number; updated: number; error?: string }> {
