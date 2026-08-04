@@ -25,6 +25,7 @@
         "SUPABASE_URL",
         "SUPABASE_SERVICE_ROLE_KEY",
         "FOOTBALL_DATA_API_KEY",
+        "MP_ACCESS_TOKEN (Mercado Pago — PIX depósito e saque; bot exibe aviso se ausente mas não falha)",
         "RENDER_EXTERNAL_URL (auto-set pelo Render em produção — activa modo webhook)",
         "PORT (auto-set pelo Render, padrão 3000)"
       ],
@@ -34,12 +35,18 @@
         "src/middleware/auth.middleware.ts",
         "src/commands/start.command.ts",
         "src/commands/extrato.command.ts",
+        "src/commands/carteira.command.ts",
         "src/actions/menu.actions.ts",
         "src/actions/matches.actions.ts",
         "src/actions/pools.actions.ts",
         "src/actions/my-entries.actions.ts",
         "src/actions/private-pools.actions.ts",
+        "src/actions/minha-conta.actions.ts",
         "src/scenes/create-pool.scene.ts",
+        "src/scenes/depositar.scene.ts",
+        "src/scenes/sacar.scene.ts",
+        "src/scenes/alterar-pix.scene.ts",
+        "src/services/mercadopago.service.ts",
         "src/services/resolution.service.ts",
         "src/services/sync-matches.service.ts",
         "src/cron/close-pools.cron.ts",
@@ -53,6 +60,9 @@
       "commands": {
         "/start": "Registro automático + boas-vindas com saldo. Também trata deep link ?start=join_{poolId}: mostra tela de convite de pool privada.",
         "/extrato": "Histórico das últimas 20 transações + saldo atual",
+        "/carteira": "Saldo + total depositado/sacado + chave PIX + botões Depositar/Sacar",
+        "/depositar": "Atalho direto para a cena de depósito PIX",
+        "/sacar": "Atalho direto para a cena de saque PIX",
         "/criarlista": "Abre WizardScene de 7 passos: campeonato → partida → modalidade → threshold (só se total_de_gols) → valor → confirmar → criar",
         "/menu": "Atalho para o menu principal"
       },
@@ -75,7 +85,42 @@
         "me_banca:{period}": "gestão de banca filtrada por período",
         "my_pools": "lista de pools privadas criadas pelo usuário com contagem de entradas e status",
         "my_pool_share:{poolId}": "envia mensagem com deep link de convite para a pool privada",
-        "cp": "entra na cena de criação de lista"
+        "cp": "entra na cena de criação de lista",
+        "minha_conta": "abre submenu Minha Conta (saldo + chave PIX)",
+        "mc_carteira": "tela de carteira com totais de depósito/saque e botões de ação",
+        "mc_extrato": "extrato das últimas 15 transações (inclui deposit e withdrawal)",
+        "mc_pix_key": "exibe chave PIX cadastrada ou convida a cadastrar",
+        "mc_alterar_pix": "entra na cena de cadastro/alteração de chave PIX",
+        "mc_depositar": "alias — entra na cena de depósito PIX",
+        "mc_sacar": "alias — entra na cena de saque PIX",
+        "carteira_depositar": "registrado em carteira.command.ts — entra na cena de depósito PIX",
+        "carteira_sacar": "registrado em carteira.command.ts — entra na cena de saque PIX",
+        "sacar_ok": "confirma o saque; executa débito + MP sendPix + notificação (com rollback automático em falha)",
+        "sacar_cancel": "cancela o saque em andamento",
+        "apix_cpf": "seleção de tipo CPF no wizard alterar-pix",
+        "apix_phone": "seleção de tipo Celular no wizard alterar-pix",
+        "apix_email": "seleção de tipo E-mail no wizard alterar-pix",
+        "apix_random": "seleção de tipo Chave aleatória no wizard alterar-pix"
+      },
+      "pix_payment_flow": {
+        "deposit": {
+          "scene": "DEPOSITAR_SCENE (2 passos): pede valor → gera pagamento MP → envia copia-e-cola",
+          "mp_endpoint": "POST /v1/payments (payment_method_id: pix)",
+          "webhook": "POST /pix/webhook (MP notifica) → valida status 'approved' → credita virtual_balance → cria transaction(deposit) → updateStatus(confirmed) → notifica usuário",
+          "note": "QR Code image não é enviado (replyWithPhoto causa ECONNRESET no Render free tier 0.1 CPU) — apenas copia-e-cola como texto"
+        },
+        "withdrawal": {
+          "scene": "SACAR_SCENE (3 passos + handleSacarOk): validações → valor → confirmação",
+          "guards": ["lock 24h desde criação da conta", "saldo mínimo R$20", "limite diário R$500 (getTodayTotal)", "chave PIX obrigatória"],
+          "mp_endpoint": "POST /v1/account/bank_transfers",
+          "rollback": "se MP falhar: restaura saldo + cria transaction(refund) + marca withdrawal failed",
+          "implemented_in": "src/scenes/sacar.scene.ts + handleSacarOk()"
+        },
+        "pix_key_registration": {
+          "scene": "ALTERAR_PIX_SCENE (3 passos): seleção de tipo via botões → instruções específicas → validação e salvo",
+          "types": ["cpf (11 dígitos)", "phone (DDD + número)", "email (contém @ e .)", "random_key (UUID regex)"],
+          "storage": "users.pix_key (TEXT) + users.pix_key_type CHECK(cpf|phone|email|random_key)"
+        }
       },
       "image_generation": {
         "status": "REMOVIDO da produção — sharp (processamento PNG) causava ECONNRESET no Render free tier (0.1 CPU); bot opera só com texto por enquanto",
@@ -120,7 +165,8 @@
         "/dashboard/usuarios/[id]": "Detalhe: stats (vitórias/derrotas/saldo), últimos 50 palpites, últimas 20 transações",
         "/dashboard/campeonatos": "Lista com contagem de partidas, edição de ESPN code, ativar/desativar",
         "/dashboard/audit": "Histórico paginado de intervenções de resultado",
-        "/dashboard/resultado/[poolId]": "Formulário de intervenção: placar casa/fora + motivo → grava em audit_log + atualiza matches.result"
+        "/dashboard/resultado/[poolId]": "Formulário de intervenção: placar casa/fora + motivo → grava em audit_log + atualiza matches.result",
+        "/dashboard/financeiro": "Stats financeiros (total depositado/sacado/líquido/usuários) + tabelas paginadas de pix_deposits e pix_withdrawals com join em users"
       },
       "key_files": {
         "src/lib/supabase-admin.ts": "createAdminClient() com SERVICE_ROLE_KEY — usado em todas as queries de dados do servidor",
@@ -222,17 +268,21 @@
         "src/repositories/entries.repository.ts",
         "src/repositories/transactions.repository.ts",
         "src/repositories/audit.repository.ts",
+        "src/repositories/pix-deposits.repository.ts",
+        "src/repositories/pix-withdrawals.repository.ts",
         "src/index.ts"
       ],
       "key_classes": {
         "Db": "Agregador principal: new Db(SUPABASE_URL, SERVICE_ROLE_KEY). Instancia todos os repositórios com um único SupabaseClient.",
-        "UsersRepository": "findByTelegramId, findById, create, upsert, updateBalance, setBlocked",
+        "UsersRepository": "findByTelegramId, findById, create, upsert, updateBalance, setBlocked, updatePixKey(userId, pixKey, pixKeyType)",
         "ChampionshipsRepository": "findActive, findById, updateLogoUrl",
         "MatchesRepository": "findById, findByIds, create, findByChampionship, findScheduledSoon, findInProgress, updateStatus, upsertByEspnId",
         "PoolsRepository": "findById, findByIds, create, findOpenByMatch, findOpen, findClosed, close, resolve, cancel",
         "EntriesRepository": "create, findByPool, findByUser, findAllByUser, findById, deleteById, countByUserAndPool, resolveEntries",
         "TransactionsRepository": "create, findByUser (paginado), sumFeesByPool, getSummaryByUser (invested/prizes/refunds), findByUserAndPoolIds",
-        "AuditRepository": "create, findByPool, findByAdmin"
+        "AuditRepository": "create, findByPool, findByAdmin",
+        "PixDepositsRepository": "create, findByMpPaymentId, findPendingByUser, updateStatus(id, status, confirmedAt?), findByUser, findAll",
+        "PixWithdrawalsRepository": "create, updateStatus(id, status, opts), getTodayTotal(userId) — soma processing+completed do dia para limite diário, findByUser, findAll"
       },
       "notes": {
         "database_types": "Tipos definidos manualmente em database.types.ts com Relationships[] para compatibilidade com supabase-js v2.",
@@ -254,16 +304,19 @@
         "20260801000008_enable_rls.sql",
         "20260802000001_add_dupla_chance_modality.sql",
         "20260802000002_add_team_logo_urls.sql",
-        "20260802000003_add_championship_logo.sql"
+        "20260802000003_add_championship_logo.sql",
+        "20260803000001_add_pix_tables.sql"
       ],
       "schema": {
-        "users":         "id, telegram_id (BIGINT UNIQUE), username, virtual_balance (NUMERIC 12,2 default 100), is_blocked, created_at",
-        "championships": "id, name, espn_code, football_data_code, modalities (TEXT[]), is_active, logo_url (TEXT nullable), created_at",
-        "matches":       "id, championship_id, home_team, away_team, kickoff_at, status (CHECK), result (JSONB), espn_match_id, football_data_match_id, created_at, updated_at (auto-trigger)",
-        "pools":         "id, match_id, modality (CHECK), tier_brl, type (CHECK global|private), status (CHECK), goal_threshold, created_by, closed_at, resolved_at, created_at",
-        "entries":       "id, pool_id, user_id, prediction (JSONB), amount, is_winner (NULL até resolução), created_at",
-        "transactions":  "id, user_id, type (CHECK entry|prize|refund|bonus), amount (>0), balance_after, pool_id, description, created_at",
-        "audit_log":     "id, admin_id, pool_id, previous_result (JSONB), new_result (JSONB), reason, created_at"
+        "users":            "id, telegram_id (BIGINT UNIQUE), username, virtual_balance (NUMERIC 12,2 default 100), is_blocked, pix_key (TEXT nullable), pix_key_type (CHECK cpf|phone|email|random_key nullable), created_at",
+        "championships":    "id, name, espn_code, football_data_code, modalities (TEXT[]), is_active, logo_url (TEXT nullable), created_at",
+        "matches":          "id, championship_id, home_team, away_team, kickoff_at, status (CHECK), result (JSONB), espn_match_id, football_data_match_id, created_at, updated_at (auto-trigger)",
+        "pools":            "id, match_id, modality (CHECK), tier_brl, type (CHECK global|private), status (CHECK), goal_threshold, created_by, closed_at, resolved_at, created_at",
+        "entries":          "id, pool_id, user_id, prediction (JSONB), amount, is_winner (NULL até resolução), created_at",
+        "transactions":     "id, user_id, type (CHECK entry|prize|refund|bonus|deposit|withdrawal), amount (>0), balance_after, pool_id, description, created_at",
+        "audit_log":        "id, admin_id, pool_id, previous_result (JSONB), new_result (JSONB), reason, created_at",
+        "pix_deposits":     "id (UUID, extRef MP), user_id, amount, mp_payment_id, qr_code (TEXT), qr_code_base64 (TEXT), status (CHECK pending|confirmed|expired|failed), expires_at, confirmed_at (nullable), created_at",
+        "pix_withdrawals":  "id (UUID), user_id, amount, pix_key, pix_key_type, status (CHECK pending|processing|completed|failed), mp_transfer_id (nullable), error_message (nullable), created_at, updated_at"
       },
       "rls": "Habilitado em todas as tabelas. Bot usa SERVICE_ROLE (bypassa RLS). Políticas públicas para championships, matches e pools. Acesso pessoal para users, entries e transactions."
     }
@@ -277,6 +330,7 @@
     "fase_5_bot": "concluida",
     "fase_6_admin": "concluida",
     "fase_7_testes_mvp": "pendente",
+    "fase_7_5_pix_real": "concluida",
     "fase_8_whitelabel": "pendente"
   },
   "monorepo_initialized": true,

@@ -7,9 +7,9 @@
 
 ## Status atual
 
-- **Última sessão:** 2026-08-03
-- **Fase concluída:** Fase 7.5 — Fluxo PIX Real (infraestrutura completa implementada; aguardando credenciais MP_ACCESS_TOKEN para ativar)
-- **Próximo passo:** Inserir MP_ACCESS_TOKEN no .env do bot (Render) + configurar URL do webhook PIX no painel MP → testar depósito real
+- **Última sessão:** 2026-08-04
+- **Fase concluída:** Fase 7.5 — Fluxo PIX Real completo (MP configurado, webhook ativo, depósito/saque funcionais)
+- **Próximo passo:** Varredura de gaps módulo a módulo → testar fluxo PIX de ponta a ponta
 - **Gaps conhecidos:** dashboard sem gráfico de arrecadação; sem trigger manual de sync; comandos `/saldo` e `/meus_palpites` ainda não implementados
 
 ---
@@ -198,23 +198,27 @@
 
 > Teste entre os fundadores com dinheiro real — depósito, apostas e saques via PIX.
 
-- [x] Processador: Mercado Pago (MP_ACCESS_TOKEN)
-- [x] Migration SQL: `pix_deposits`, `pix_withdrawals`, `pix_key` em users, tipos `deposit`/`withdrawal` em transactions
+- [x] Processador: Mercado Pago (MP_ACCESS_TOKEN configurado no Render)
+- [x] Migration SQL aplicada no Supabase: `pix_deposits`, `pix_withdrawals`, `pix_key`/`pix_key_type` em users, tipos `deposit`/`withdrawal` em transactions
 - [x] `packages/database`: `PixDepositsRepository`, `PixWithdrawalsRepository`, `updatePixKey` em UsersRepository
 - [x] `MercadoPagoService`: `createPixDeposit`, `getPayment`, `sendPix` (PIX out)
-- [x] Cena `/depositar`: wizard 2 passos — valor → QR Code gerado + copia-e-cola (expira 30 min)
-- [x] Cena `/sacar`: wizard com check de lock 24h, saldo, limite diário R$500, registro/confirmação de chave PIX
+- [x] Cena `/depositar`: wizard 2 passos — valor → copia-e-cola PIX gerado (expira 30 min); sem QR Code image (ECONNRESET no Render free tier)
+- [x] Fix ECONNRESET: removido `replyWithPhoto` do depositar.scene — bot envia só texto + código copia-e-cola
+- [x] Cena `/sacar`: wizard com check de lock 24h, saldo mínimo R$20, limite diário R$500, registro/confirmação de chave PIX
 - [x] Estorno automático do saldo se a transferência MP falhar
 - [x] Comando `/carteira`: saldo + total depositado/sacado + botões Depositar/Sacar
-- [x] Webhook `POST /pix/webhook`: confirma pagamento MP → credita saldo → notifica usuário via Telegram
+- [x] Webhook `POST /pix/webhook` configurado no painel MP (evento "Pagamentos legacy", modo produção)
+- [x] Webhook handler: confirma pagamento MP → credita saldo → notifica usuário via Telegram
+- [x] **Submenu "Minha Conta"** no menu principal:
+  - [x] Botão `💼 Minha Conta` no menu principal
+  - [x] Submenus: Carteira, Extrato, Minha Chave PIX, Minhas Entradas
+  - [x] Cena `alterar-pix`: seleção de tipo de chave via botões (CPF / Celular / E-mail / Chave aleatória), instruções específicas por tipo, validação por tipo
+  - [x] Chave PIX salva no Supabase (campo `pix_key` + `pix_key_type` na tabela `users`)
 - [x] `/extrato`: ícones e labels para `deposit` e `withdrawal` adicionados
 - [x] Admin `/dashboard/financeiro`: stats (total depositado, sacado, líquido) + tabelas de depósitos e saques com paginação
 - [x] Nav admin: item "Financeiro" com ícone Wallet
 - [x] `.env.example` atualizado com `MP_ACCESS_TOKEN`
-- [ ] **PENDENTE:** Inserir `MP_ACCESS_TOKEN` no .env do bot (Render)
-- [ ] **PENDENTE:** Configurar URL do webhook PIX no painel MP: `URL_DO_BOT/pix/webhook`
-- [ ] Aplicar migration no Supabase: `supabase db push` ou executar direto no SQL Editor
-- [ ] Testes end-to-end com PIX real entre os fundadores
+- [ ] Testes end-to-end com PIX real entre os fundadores (próximo passo)
 
 ---
 
