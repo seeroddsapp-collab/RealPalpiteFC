@@ -72,29 +72,36 @@ function KpiCard({
 
 // SVG bar chart — rendered server-side, no JS required
 function FlowChart({ data }: { data: Array<{ label: string; dep: number; wit: number }> }) {
-  const W = 700
-  const H = 140
-  const PAD = { top: 12, right: 12, bottom: 28, left: 52 }
+  const W = 1200
+  const H = 260
+  const PAD = { top: 32, right: 20, bottom: 40, left: 72 }
   const chartW = W - PAD.left - PAD.right
   const chartH = H - PAD.top - PAD.bottom
-  const maxVal = Math.max(...data.map(d => Math.max(d.dep, d.wit)), 1)
+  const maxVal = Math.max(...data.map(d => Math.max(d.dep, d.wit)), 10)
   const barSlot = chartW / data.length
-  const groupW = Math.max(barSlot * 0.7, 2)
-  const barW = groupW / 2 - 1
+  const groupW = Math.max(barSlot * 0.72, 4)
+  const barW = groupW / 2 - 1.5
 
   const yTicks = [0, 0.25, 0.5, 0.75, 1]
 
+  function fmtY(val: number) {
+    if (val === 0) return 'R$0'
+    if (val >= 1000) return `R$${(val / 1000).toFixed(0)}k`
+    return `R$${val.toFixed(0)}`
+  }
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 140 }}>
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minHeight: 200 }}>
       {/* Grid lines */}
       {yTicks.map(t => {
         const y = PAD.top + chartH * (1 - t)
         const val = maxVal * t
         return (
           <g key={t}>
-            <line x1={PAD.left} x2={W - PAD.right} y1={y} y2={y} stroke="#1e293b" strokeWidth={1} />
-            <text x={PAD.left - 4} y={y + 4} textAnchor="end" fontSize={9} fill="#64748b">
-              {val === 0 ? 'R$0' : val >= 1000 ? `R$${(val / 1000).toFixed(0)}k` : `R$${val.toFixed(0)}`}
+            <line x1={PAD.left} x2={W - PAD.right} y1={y} y2={y}
+              stroke={t === 0 ? '#334155' : '#1e293b'} strokeWidth={t === 0 ? 1.5 : 1} />
+            <text x={PAD.left - 8} y={y + 4} textAnchor="end" fontSize={13} fill="#64748b">
+              {fmtY(val)}
             </text>
           </g>
         )
@@ -103,16 +110,22 @@ function FlowChart({ data }: { data: Array<{ label: string; dep: number; wit: nu
       {/* Bars */}
       {data.map((d, i) => {
         const cx = PAD.left + i * barSlot + barSlot / 2
-        const depH = Math.max((d.dep / maxVal) * chartH, d.dep > 0 ? 2 : 0)
-        const witH = Math.max((d.wit / maxVal) * chartH, d.wit > 0 ? 2 : 0)
+        const depH = Math.max((d.dep / maxVal) * chartH, d.dep > 0 ? 3 : 0)
+        const witH = Math.max((d.wit / maxVal) * chartH, d.wit > 0 ? 3 : 0)
         const showLabel = data.length <= 30 && i % Math.ceil(data.length / 10) === 0
 
         return (
           <g key={d.label}>
-            <rect x={cx - groupW / 2} y={PAD.top + chartH - depH} width={barW} height={depH} fill="#10b981" opacity={0.85} rx={1} />
-            <rect x={cx} y={PAD.top + chartH - witH} width={barW} height={witH} fill="#f43f5e" opacity={0.85} rx={1} />
+            {depH > 0 && (
+              <rect x={cx - groupW / 2} y={PAD.top + chartH - depH} width={barW} height={depH}
+                fill="#10b981" opacity={0.85} rx={2} />
+            )}
+            {witH > 0 && (
+              <rect x={cx} y={PAD.top + chartH - witH} width={barW} height={witH}
+                fill="#f43f5e" opacity={0.85} rx={2} />
+            )}
             {showLabel && (
-              <text x={cx} y={H - 4} textAnchor="middle" fontSize={8} fill="#64748b">
+              <text x={cx} y={H - 8} textAnchor="middle" fontSize={12} fill="#64748b">
                 {d.label.slice(5)}
               </text>
             )}
@@ -121,10 +134,10 @@ function FlowChart({ data }: { data: Array<{ label: string; dep: number; wit: nu
       })}
 
       {/* Legend */}
-      <rect x={PAD.left} y={2} width={8} height={8} fill="#10b981" rx={1} />
-      <text x={PAD.left + 10} y={10} fontSize={9} fill="#94a3b8">Depósitos</text>
-      <rect x={PAD.left + 70} y={2} width={8} height={8} fill="#f43f5e" rx={1} />
-      <text x={PAD.left + 82} y={10} fontSize={9} fill="#94a3b8">Saques</text>
+      <rect x={PAD.left} y={8} width={12} height={12} fill="#10b981" rx={2} />
+      <text x={PAD.left + 16} y={19} fontSize={13} fill="#94a3b8">Depósitos</text>
+      <rect x={PAD.left + 100} y={8} width={12} height={12} fill="#f43f5e" rx={2} />
+      <text x={PAD.left + 116} y={19} fontSize={13} fill="#94a3b8">Saques</text>
     </svg>
   )
 }
@@ -327,11 +340,13 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
       </div>
 
       {/* ── Seção 4: Gráfico ── */}
-      <div className="bg-white dark:bg-navy-800 rounded-xl p-4 border border-stone-200 dark:border-navy-700">
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wide mb-3">
+      <div className="bg-white dark:bg-navy-800 rounded-xl p-6 border border-stone-200 dark:border-navy-700">
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wide mb-4">
           Fluxo Últimos 30 Dias
         </p>
-        <FlowChart data={chartData} />
+        <div className="overflow-x-auto">
+          <FlowChart data={chartData} />
+        </div>
       </div>
 
       {/* ── Seção 5: Tabelas ── */}
