@@ -91,7 +91,7 @@ function FlowChart({ data }: { data: Array<{ label: string; dep: number; wit: nu
   }
 
   return (
-    <div className="h-40 sm:h-52 md:h-64 w-full">
+    <div style={{ minWidth: '100%', width: '640px', height: '220px' }}>
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="none">
       {/* Grid lines */}
       {yTicks.map(t => {
