@@ -87,7 +87,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
 
       {/* Header */}
       <div className="bg-white dark:bg-navy-900 rounded-xl border border-stone-200 dark:border-navy-700 shadow-sm p-6 mb-6">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
               {user.username ? `@${user.username}` : `Usuário ${user.telegram_id}`}
@@ -155,8 +155,8 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
                   const match = resolveMatch(pool)
                   return (
                     <tr key={e.id} className="hover:bg-stone-50 dark:hover:bg-navy-800">
-                      <td className="px-4 py-3">
-                        <div className="text-xs font-medium text-slate-700 dark:text-slate-200">{match ? `${match.home_team} × ${match.away_team}` : '—'}</div>
+                      <td className="px-4 py-3 max-w-[130px] lg:max-w-none">
+                        <div className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate">{match ? `${match.home_team} × ${match.away_team}` : '—'}</div>
                         <div className="text-xs text-slate-400 dark:text-slate-500">{pool ? (MODALITY_LABEL[pool.modality] ?? pool.modality) : '—'}</div>
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-slate-600 dark:text-slate-300">{JSON.stringify(e.prediction)}</td>

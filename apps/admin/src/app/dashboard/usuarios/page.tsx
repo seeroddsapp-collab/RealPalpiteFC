@@ -72,32 +72,32 @@ export default async function UsuariosPage({
           <table className="w-full text-sm">
             <thead className="bg-stone-50 dark:bg-navy-800 text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wide">
               <tr>
-                <th className="px-6 py-3 text-left">Telegram</th>
-                <th className="px-6 py-3 text-left">Saldo</th>
-                <th className="px-6 py-3 text-left">Palpites</th>
-                <th className="px-6 py-3 text-left">Cadastro</th>
-                <th className="px-6 py-3 text-left">Status</th>
-                <th className="px-6 py-3 text-left">Ações</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Telegram</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Saldo</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left hidden sm:table-cell">Palpites</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left hidden md:table-cell">Cadastro</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Status</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-navy-700">
               {users.map(u => (
                 <tr key={u.id} className={`hover:bg-stone-50 dark:hover:bg-navy-800 transition-colors ${u.is_blocked ? 'opacity-60' : ''}`}>
-                  <td className="px-6 py-3">
+                  <td className="px-3 lg:px-6 py-2 lg:py-3 max-w-[130px] sm:max-w-none">
                     <Link href={`/dashboard/usuarios/${u.id}`} className="group">
-                      <div className="font-medium text-slate-800 dark:text-slate-200 group-hover:text-gold-600 transition-colors">
+                      <div className="font-medium text-slate-800 dark:text-slate-200 group-hover:text-gold-600 transition-colors truncate">
                         {u.username ? `@${u.username}` : `ID ${u.telegram_id}`}
                       </div>
-                      <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">ID: {String(u.telegram_id)}</div>
+                      <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">ID: {String(u.telegram_id)}</div>
                     </Link>
                   </td>
-                  <td className="px-6 py-3 font-medium text-slate-700 dark:text-slate-200 font-mono text-xs">{fmtBrl(u.virtual_balance)}</td>
-                  <td className="px-6 py-3 text-slate-600 dark:text-slate-300">{counts[u.id] ?? 0}</td>
-                  <td className="px-6 py-3 text-slate-400 dark:text-slate-500 text-xs">{fmtDate(u.created_at)}</td>
-                  <td className="px-6 py-3">
+                  <td className="px-3 lg:px-6 py-2 lg:py-3 font-medium text-slate-700 dark:text-slate-200 font-mono text-xs">{fmtBrl(u.virtual_balance)}</td>
+                  <td className="px-3 lg:px-6 py-2 lg:py-3 text-slate-600 dark:text-slate-300 hidden sm:table-cell">{counts[u.id] ?? 0}</td>
+                  <td className="px-3 lg:px-6 py-2 lg:py-3 text-slate-400 dark:text-slate-500 text-xs hidden md:table-cell">{fmtDate(u.created_at)}</td>
+                  <td className="px-3 lg:px-6 py-2 lg:py-3">
                     <StatusBadge status={u.is_blocked ? 'cancelled' : 'open'} />
                   </td>
-                  <td className="px-6 py-3">
+                  <td className="px-3 lg:px-6 py-2 lg:py-3">
                     <form action={toggleUserBlocked.bind(null, u.id, !u.is_blocked)}>
                       <button
                         type="submit"
@@ -115,7 +115,7 @@ export default async function UsuariosPage({
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400 dark:text-slate-500">
+                  <td colSpan={6} className="px-3 py-12 text-center text-slate-400 dark:text-slate-500">
                     Nenhum usuário encontrado.
                   </td>
                 </tr>

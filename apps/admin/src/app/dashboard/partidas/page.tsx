@@ -98,11 +98,11 @@ export default async function PartidasPage({
           <table className="w-full text-sm">
             <thead className="bg-stone-50 dark:bg-navy-800 text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wide">
               <tr>
-                <th className="px-6 py-3 text-left">Partida</th>
-                <th className="px-6 py-3 text-left">Campeonato</th>
-                <th className="px-6 py-3 text-left">Kickoff</th>
-                <th className="px-6 py-3 text-left">Resultado</th>
-                <th className="px-6 py-3 text-left">Status</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Partida</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left hidden sm:table-cell">Campeonato</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left hidden md:table-cell">Kickoff</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Resultado</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-navy-700">
@@ -111,14 +111,16 @@ export default async function PartidasPage({
                 const result = m.result as { home?: number; away?: number } | null
                 return (
                   <tr key={m.id} className="hover:bg-stone-50 dark:hover:bg-navy-800 transition-colors">
-                    <td className="px-6 py-3">
-                      <span className="font-medium text-slate-800 dark:text-slate-200">{m.home_team}</span>
-                      <span className="text-slate-400 dark:text-slate-500 mx-2">×</span>
-                      <span className="font-medium text-slate-800 dark:text-slate-200">{m.away_team}</span>
+                    <td className="px-3 lg:px-6 py-2 lg:py-3 max-w-[180px] lg:max-w-none">
+                      <div className="truncate">
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{m.home_team}</span>
+                        <span className="text-slate-400 dark:text-slate-500 mx-2">×</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{m.away_team}</span>
+                      </div>
                     </td>
-                    <td className="px-6 py-3 text-slate-500 dark:text-slate-400 text-xs">{champ?.name ?? '—'}</td>
-                    <td className="px-6 py-3 text-slate-500 dark:text-slate-400 text-xs">{fmtDate(m.kickoff_at)}</td>
-                    <td className="px-6 py-3">
+                    <td className="px-3 lg:px-6 py-2 lg:py-3 text-slate-500 dark:text-slate-400 text-xs hidden sm:table-cell">{champ?.name ?? '—'}</td>
+                    <td className="px-3 lg:px-6 py-2 lg:py-3 text-slate-500 dark:text-slate-400 text-xs hidden md:table-cell">{fmtDate(m.kickoff_at)}</td>
+                    <td className="px-3 lg:px-6 py-2 lg:py-3">
                       {result?.home !== undefined && result?.away !== undefined ? (
                         <span className="font-mono font-bold text-slate-800 dark:text-slate-200 text-xs">
                           {result.home} – {result.away}
@@ -127,7 +129,7 @@ export default async function PartidasPage({
                         <span className="text-slate-300 dark:text-slate-600 text-xs">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-3">
+                    <td className="px-3 lg:px-6 py-2 lg:py-3">
                       <StatusBadge status={MATCH_STATUS_MAP[m.status] ?? 'open'} />
                     </td>
                   </tr>
@@ -135,7 +137,7 @@ export default async function PartidasPage({
               })}
               {matches.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400 dark:text-slate-500">
+                  <td colSpan={5} className="px-3 py-12 text-center text-slate-400 dark:text-slate-500">
                     Nenhuma partida encontrada.
                   </td>
                 </tr>

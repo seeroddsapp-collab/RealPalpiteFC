@@ -39,25 +39,25 @@ export default async function CampeonatosPage() {
           <table className="w-full text-sm">
             <thead className="bg-stone-50 dark:bg-navy-800 text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wide">
               <tr>
-                <th className="px-6 py-3 text-left">Campeonato</th>
-                <th className="px-6 py-3 text-left">ESPN Code</th>
-                <th className="px-6 py-3 text-left">Partidas</th>
-                <th className="px-6 py-3 text-left">Status</th>
-                <th className="px-6 py-3 text-left">Ações</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Campeonato</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">ESPN Code</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left hidden sm:table-cell">Partidas</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Status</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-navy-700">
               {champs.map(c => (
                 <tr key={c.id} className="hover:bg-stone-50 dark:hover:bg-navy-800 transition-colors">
-                  <td className="px-6 py-3">
-                    <div className="flex items-center gap-3">
+                  <td className="px-3 lg:px-6 py-2 lg:py-3 max-w-[140px] sm:max-w-none">
+                    <div className="flex items-center gap-2 lg:gap-3">
                       {c.logo_url && (
                         <img src={c.logo_url} alt="" className="w-6 h-6 object-contain flex-shrink-0" />
                       )}
-                      <span className="font-medium text-slate-800 dark:text-slate-200">{c.name}</span>
+                      <span className="font-medium text-slate-800 dark:text-slate-200 truncate">{c.name}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-3">
+                  <td className="px-3 lg:px-6 py-2 lg:py-3">
                     <form
                       action={async (fd: FormData) => {
                         'use server'
@@ -83,14 +83,14 @@ export default async function CampeonatosPage() {
                       </button>
                     </form>
                   </td>
-                  <td className="px-6 py-3">
+                  <td className="px-3 lg:px-6 py-2 lg:py-3 hidden sm:table-cell">
                     <span className="text-slate-600 dark:text-slate-300 font-medium">{matchCounts[c.id] ?? 0}</span>
                     <span className="text-slate-400 dark:text-slate-500 text-xs ml-1">partidas</span>
                   </td>
-                  <td className="px-6 py-3">
+                  <td className="px-3 lg:px-6 py-2 lg:py-3">
                     <StatusBadge status={c.is_active ? 'open' : 'cancelled'} />
                   </td>
-                  <td className="px-6 py-3">
+                  <td className="px-3 lg:px-6 py-2 lg:py-3">
                     <form action={toggleChampionshipActive.bind(null, c.id, !c.is_active)}>
                       <button
                         type="submit"

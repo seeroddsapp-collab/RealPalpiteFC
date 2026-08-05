@@ -50,7 +50,7 @@ export default async function ResultadoPage({ params }: { params: Promise<{ pool
 
       {/* Pool info */}
       <div className="bg-white dark:bg-navy-900 rounded-lg border border-slate-200 dark:border-navy-700 p-6 mb-6 shadow-sm">
-        <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wide mb-0.5">Partida</p>
             <p className="font-semibold text-slate-900 dark:text-slate-100">
@@ -184,20 +184,20 @@ export default async function ResultadoPage({ params }: { params: Promise<{ pool
           <table className="w-full text-sm">
             <thead className="bg-slate-50 dark:bg-navy-800 text-slate-500 dark:text-slate-400 text-xs uppercase">
               <tr>
-                <th className="px-6 py-3 text-left">Palpite</th>
-                <th className="px-6 py-3 text-left">Valor</th>
-                <th className="px-6 py-3 text-left">Resultado</th>
-                <th className="px-6 py-3 text-left">Data</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Palpite</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Valor</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Resultado</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left hidden sm:table-cell">Data</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-navy-700">
               {entries.map(e => (
                 <tr key={e.id} className="hover:bg-slate-50 dark:hover:bg-navy-800">
-                  <td className="px-6 py-3 font-mono text-xs text-slate-700 dark:text-slate-200">
-                    {JSON.stringify(e.prediction)}
+                  <td className="px-3 lg:px-6 py-2 lg:py-3 font-mono text-xs text-slate-700 dark:text-slate-200 max-w-[110px] sm:max-w-none">
+                    <div className="truncate">{JSON.stringify(e.prediction)}</div>
                   </td>
-                  <td className="px-6 py-3 text-slate-700 dark:text-slate-200">{fmtBrl(e.amount)}</td>
-                  <td className="px-6 py-3">
+                  <td className="px-3 lg:px-6 py-2 lg:py-3 text-slate-700 dark:text-slate-200">{fmtBrl(e.amount)}</td>
+                  <td className="px-3 lg:px-6 py-2 lg:py-3">
                     {e.is_winner === null ? (
                       <span className="text-slate-400 dark:text-slate-500 text-xs">Pendente</span>
                     ) : e.is_winner ? (
@@ -206,7 +206,7 @@ export default async function ResultadoPage({ params }: { params: Promise<{ pool
                       <span className="text-red-500 text-xs">✗ Perdeu</span>
                     )}
                   </td>
-                  <td className="px-6 py-3 text-slate-400 dark:text-slate-500 text-xs">{fmtDate(e.created_at)}</td>
+                  <td className="px-3 lg:px-6 py-2 lg:py-3 text-slate-400 dark:text-slate-500 text-xs hidden sm:table-cell">{fmtDate(e.created_at)}</td>
                 </tr>
               ))}
             </tbody>

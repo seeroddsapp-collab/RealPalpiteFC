@@ -86,13 +86,13 @@ export default async function EntradasPage({
           <table className="w-full text-sm">
             <thead className="bg-stone-50 dark:bg-navy-800 text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wide">
               <tr>
-                <th className="px-6 py-3 text-left">Usuário</th>
-                <th className="px-6 py-3 text-left">Partida</th>
-                <th className="px-6 py-3 text-left">Modalidade</th>
-                <th className="px-6 py-3 text-left">Palpite</th>
-                <th className="px-6 py-3 text-left">Valor</th>
-                <th className="px-6 py-3 text-left">Resultado</th>
-                <th className="px-6 py-3 text-left">Data</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Usuário</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left hidden md:table-cell">Partida</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left hidden sm:table-cell">Modalidade</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Palpite</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Valor</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Resultado</th>
+                <th className="px-3 lg:px-6 py-2 lg:py-3 text-left hidden lg:table-cell">Data</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-navy-700">
@@ -102,26 +102,26 @@ export default async function EntradasPage({
                 const match = resolveMatch(pool)
                 return (
                   <tr key={e.id} className="hover:bg-stone-50 dark:hover:bg-navy-800 transition-colors">
-                    <td className="px-6 py-3">
+                    <td className="px-3 lg:px-6 py-2 lg:py-3 max-w-[110px] sm:max-w-none">
                       {user ? (
-                        <Link href={`/dashboard/usuarios/${user.id}`} className="font-medium text-slate-800 dark:text-slate-200 hover:text-gold-600 transition-colors">
+                        <Link href={`/dashboard/usuarios/${user.id}`} className="font-medium text-slate-800 dark:text-slate-200 hover:text-gold-600 transition-colors truncate block">
                           {user.username ? `@${user.username}` : `ID ${user.telegram_id}`}
                         </Link>
                       ) : '—'}
                     </td>
-                    <td className="px-6 py-3 text-slate-600 dark:text-slate-300 text-xs">
-                      {match ? `${match.home_team} × ${match.away_team}` : '—'}
+                    <td className="px-3 lg:px-6 py-2 lg:py-3 text-slate-600 dark:text-slate-300 text-xs hidden md:table-cell max-w-[160px] lg:max-w-none">
+                      <div className="truncate">{match ? `${match.home_team} × ${match.away_team}` : '—'}</div>
                     </td>
-                    <td className="px-6 py-3 text-slate-500 dark:text-slate-400 text-xs">
+                    <td className="px-3 lg:px-6 py-2 lg:py-3 text-slate-500 dark:text-slate-400 text-xs hidden sm:table-cell">
                       {pool ? (MODALITY_LABEL[pool.modality] ?? pool.modality) : '—'}
                     </td>
-                    <td className="px-6 py-3 font-mono text-xs text-slate-700 dark:text-slate-200">
-                      {JSON.stringify(e.prediction)}
+                    <td className="px-3 lg:px-6 py-2 lg:py-3 font-mono text-xs text-slate-700 dark:text-slate-200 max-w-[100px] lg:max-w-none">
+                      <div className="truncate">{JSON.stringify(e.prediction)}</div>
                     </td>
-                    <td className="px-6 py-3 font-mono text-xs font-semibold text-slate-700 dark:text-slate-200">
+                    <td className="px-3 lg:px-6 py-2 lg:py-3 font-mono text-xs font-semibold text-slate-700 dark:text-slate-200">
                       {fmtBrl(e.amount)}
                     </td>
-                    <td className="px-6 py-3">
+                    <td className="px-3 lg:px-6 py-2 lg:py-3">
                       {e.is_winner === null ? (
                         <span className="text-slate-300 dark:text-slate-600 text-xs">Pendente</span>
                       ) : e.is_winner ? (
@@ -130,13 +130,13 @@ export default async function EntradasPage({
                         <span className="text-xs font-semibold text-red-500">Perdeu</span>
                       )}
                     </td>
-                    <td className="px-6 py-3 text-slate-400 dark:text-slate-500 text-xs">{fmtDate(e.created_at)}</td>
+                    <td className="px-3 lg:px-6 py-2 lg:py-3 text-slate-400 dark:text-slate-500 text-xs hidden lg:table-cell">{fmtDate(e.created_at)}</td>
                   </tr>
                 )
               })}
               {entries.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400 dark:text-slate-500">
+                  <td colSpan={7} className="px-3 py-12 text-center text-slate-400 dark:text-slate-500">
                     Nenhuma entrada encontrada.
                   </td>
                 </tr>

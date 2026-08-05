@@ -66,11 +66,11 @@ export default async function AuditPage({
             <table className="w-full text-sm">
               <thead className="bg-stone-50 dark:bg-navy-800 text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wide">
                 <tr>
-                  <th className="px-6 py-3 text-left">Data</th>
-                  <th className="px-6 py-3 text-left">Pool</th>
-                  <th className="px-6 py-3 text-left">Resultado anterior</th>
-                  <th className="px-6 py-3 text-left">Novo resultado</th>
-                  <th className="px-6 py-3 text-left">Motivo</th>
+                  <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Data</th>
+                  <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Pool</th>
+                  <th className="px-3 lg:px-6 py-2 lg:py-3 text-left hidden sm:table-cell">Resultado anterior</th>
+                  <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Novo resultado</th>
+                  <th className="px-3 lg:px-6 py-2 lg:py-3 text-left">Motivo</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 dark:divide-navy-700">
@@ -79,22 +79,22 @@ export default async function AuditPage({
                   const match = resolveMatch(pool)
                   return (
                     <tr key={log.id} className="hover:bg-stone-50 dark:hover:bg-navy-800 transition-colors">
-                      <td className="px-6 py-3 text-slate-400 dark:text-slate-500 text-xs whitespace-nowrap">{fmtDate(log.created_at)}</td>
-                      <td className="px-6 py-3">
+                      <td className="px-3 lg:px-6 py-2 lg:py-3 text-slate-400 dark:text-slate-500 text-xs whitespace-nowrap">{fmtDate(log.created_at)}</td>
+                      <td className="px-3 lg:px-6 py-2 lg:py-3 max-w-[140px] sm:max-w-none">
                         {match && (
-                          <div className="font-medium text-slate-800 dark:text-slate-200 text-xs">{match.home_team} × {match.away_team}</div>
+                          <div className="font-medium text-slate-800 dark:text-slate-200 text-xs truncate">{match.home_team} × {match.away_team}</div>
                         )}
                         {pool && (
                           <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{MODALITY_LABEL[pool.modality] ?? pool.modality}</div>
                         )}
                       </td>
-                      <td className="px-6 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">
+                      <td className="px-3 lg:px-6 py-2 lg:py-3 font-mono text-xs text-slate-500 dark:text-slate-400 hidden sm:table-cell">
                         {JSON.stringify(log.previous_result)}
                       </td>
-                      <td className="px-6 py-3 font-mono text-xs text-gold-700 font-semibold">
+                      <td className="px-3 lg:px-6 py-2 lg:py-3 font-mono text-xs text-gold-700 font-semibold">
                         {JSON.stringify(log.new_result)}
                       </td>
-                      <td className="px-6 py-3 text-slate-600 dark:text-slate-300 text-xs max-w-xs">
+                      <td className="px-3 lg:px-6 py-2 lg:py-3 text-slate-600 dark:text-slate-300 text-xs max-w-xs">
                         <span className="line-clamp-2">{log.reason}</span>
                       </td>
                     </tr>
