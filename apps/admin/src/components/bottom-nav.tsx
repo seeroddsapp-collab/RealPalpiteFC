@@ -43,7 +43,7 @@ export function BottomNav() {
         <div className="flex-1 flex flex-col items-center relative pb-2">
           <Link
             href="/dashboard/financeiro"
-            className={`absolute -top-5 w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-gold-500/30 border-4 border-white dark:border-navy-950 transition-transform active:scale-95 ${
+            className={`absolute -top-8 w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-gold-500/30 border-4 border-white dark:border-navy-950 transition-transform active:scale-95 ${
               financeiroActive ? 'bg-gold-600' : 'bg-gold-500 hover:bg-gold-600'
             }`}
           >
