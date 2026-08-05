@@ -70,90 +70,84 @@ function KpiCard({
   )
 }
 
-type ChartConfig = {
-  W: number; H: number
-  pad: { top: number; right: number; bottom: number; left: number }
-  fs: number
-}
-
-function ChartSvg({ data, cfg }: {
-  data: Array<{ label: string; dep: number; wit: number }>
-  cfg: ChartConfig
-}) {
-  const { W, H, pad, fs } = cfg
-  const chartW = W - pad.left - pad.right
-  const chartH = H - pad.top - pad.bottom
-  const maxVal = Math.max(...data.map(d => Math.max(d.dep, d.wit)), 10)
-  const barSlot = chartW / data.length
-  const groupW = Math.max(barSlot * 0.7, 3)
-  const barW = Math.max(groupW / 2 - 1, 1.5)
-  const yTicks = [0, 0.25, 0.5, 0.75, 1]
+// Gráfico 100% CSS/flexbox — naturalmente responsivo, sem SVG scaling issues
+function FlowChart({ data }: { data: Array<{ label: string; dep: number; wit: number }> }) {
+  const maxVal = Math.max(...data.map(d => Math.max(d.dep, d.wit)), 0.01)
+  const step = Math.ceil(data.length / 8)
 
   function fmtY(val: number) {
     if (val === 0) return 'R$0'
-    if (val >= 1000) return `R$${(val / 1000).toFixed(0)}k`
+    if (val >= 1000) return `R$${(val / 1000).toFixed(1)}k`
     return `R$${val.toFixed(0)}`
   }
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ display: 'block' }}>
-      {yTicks.map(t => {
-        const y = pad.top + chartH * (1 - t)
-        return (
-          <g key={t}>
-            <line x1={pad.left} x2={W - pad.right} y1={y} y2={y}
-              stroke={t === 0 ? '#334155' : '#1e2a3a'} strokeWidth={t === 0 ? 1.5 : 1} />
-            <text x={pad.left - 6} y={y + fs * 0.35} textAnchor="end" fontSize={fs} fill="#64748b">
-              {fmtY(maxVal * t)}
-            </text>
-          </g>
-        )
-      })}
-
-      {data.map((d, i) => {
-        const cx = pad.left + i * barSlot + barSlot / 2
-        const depH = Math.max((d.dep / maxVal) * chartH, d.dep > 0 ? 3 : 0)
-        const witH = Math.max((d.wit / maxVal) * chartH, d.wit > 0 ? 3 : 0)
-        const showLabel = i % Math.ceil(data.length / 8) === 0
-        return (
-          <g key={d.label}>
-            {depH > 0 && <rect x={cx - groupW / 2} y={pad.top + chartH - depH} width={barW} height={depH} fill="#10b981" opacity={0.85} rx={2} />}
-            {witH > 0 && <rect x={cx} y={pad.top + chartH - witH} width={barW} height={witH} fill="#f43f5e" opacity={0.85} rx={2} />}
-            {showLabel && (
-              <text x={cx} y={H - 5} textAnchor="middle" fontSize={fs - 1} fill="#64748b">
-                {d.label.slice(5)}
-              </text>
-            )}
-          </g>
-        )
-      })}
-
-      <rect x={pad.left} y={6} width={fs - 2} height={fs - 2} fill="#10b981" rx={2} />
-      <text x={pad.left + fs + 2} y={6 + fs * 0.75} fontSize={fs} fill="#94a3b8">Depósitos</text>
-      <rect x={pad.left + fs * 8} y={6} width={fs - 2} height={fs - 2} fill="#f43f5e" rx={2} />
-      <text x={pad.left + fs * 8 + fs + 2} y={6 + fs * 0.75} fontSize={fs} fill="#94a3b8">Saques</text>
-    </svg>
-  )
-}
-
-// Dois tamanhos: mobile (scroll horizontal) e desktop (fill width)
-function FlowChart({ data }: { data: Array<{ label: string; dep: number; wit: number }> }) {
-  const mobileCfg: ChartConfig = { W: 480, H: 200, pad: { top: 28, right: 12, bottom: 34, left: 44 }, fs: 12 }
-  const desktopCfg: ChartConfig = { W: 900, H: 240, pad: { top: 32, right: 16, bottom: 38, left: 56 }, fs: 13 }
-
-  return (
-    <>
-      {/* Mobile: 480px fixo, scroll horizontal */}
-      <div className="md:hidden overflow-x-auto">
-        <ChartSvg data={data} cfg={mobileCfg} />
+    <div className="w-full select-none">
+      {/* Legenda */}
+      <div className="flex gap-5 mb-4 text-xs text-slate-400">
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block flex-shrink-0" />
+          Depósitos
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-rose-500 inline-block flex-shrink-0" />
+          Saques
+        </span>
       </div>
-      {/* Desktop: 900px, fill container */}
-      <div className="hidden md:block w-full overflow-x-auto">
-        <div style={{ minWidth: '100%', width: '900px' }}>
-          <ChartSvg data={data} cfg={desktopCfg} />
+
+      <div className="flex gap-3">
+        {/* Eixo Y */}
+        <div className="flex flex-col justify-between text-right shrink-0 w-12 pb-6">
+          {[1, 0.75, 0.5, 0.25, 0].map(t => (
+            <span key={t} className="text-[11px] text-slate-500 leading-none">{fmtY(maxVal * t)}</span>
+          ))}
+        </div>
+
+        {/* Área do gráfico */}
+        <div className="flex-1 min-w-0 flex flex-col gap-1">
+          {/* Barras + grid */}
+          <div className="relative h-44 border-b border-l border-slate-700/60">
+            {/* Linhas de grade */}
+            {[0.25, 0.5, 0.75].map(t => (
+              <div
+                key={t}
+                className="absolute inset-x-0 border-t border-slate-800"
+                style={{ bottom: `${t * 100}%` }}
+              />
+            ))}
+
+            {/* Grupos de barras */}
+            <div className="absolute inset-0 flex items-end gap-px px-0.5 pt-1">
+              {data.map(d => (
+                <div key={d.label} className="flex-1 flex gap-px items-end h-full min-w-0">
+                  <div
+                    className="flex-1 bg-emerald-500/80 rounded-t-sm min-h-0"
+                    style={{ height: `${(d.dep / maxVal * 100).toFixed(1)}%` }}
+                  />
+                  <div
+                    className="flex-1 bg-rose-500/80 rounded-t-sm min-h-0"
+                    style={{ height: `${(d.wit / maxVal * 100).toFixed(1)}%` }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Eixo X */}
+          <div className="flex h-5">
+            {data.map((d, i) => (
+              <div key={d.label} className="flex-1 min-w-0 text-center overflow-hidden">
+                {i % step === 0 && (
+                  <span className="text-[10px] text-slate-500 leading-none whitespace-nowrap">
+                    {d.label.slice(5)}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 
