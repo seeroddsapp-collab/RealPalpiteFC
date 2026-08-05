@@ -40,7 +40,7 @@ export function BottomNav() {
         {/* FAB central — absolute relativo ao div interno (h-16=64px) */}
         <Link
           href="/dashboard/financeiro"
-          className={`absolute left-1/2 -translate-x-1/2 bottom-full translate-y-8 w-16 h-16 z-10 rounded-full flex items-center justify-center shadow-xl shadow-gold-500/40 border-4 border-white dark:border-navy-950 transition-transform active:scale-95 ${
+          className={`absolute left-1/2 -translate-x-1/2 bottom-full translate-y-10 w-14 h-14 z-10 rounded-full flex items-center justify-center shadow-xl shadow-gold-500/40 border-4 border-white dark:border-navy-950 transition-transform active:scale-95 ${
             financeiroActive ? 'bg-gold-600' : 'bg-gold-500 hover:bg-gold-600'
           }`}
         >
