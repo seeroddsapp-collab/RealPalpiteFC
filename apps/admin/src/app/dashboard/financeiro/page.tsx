@@ -197,6 +197,8 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
   const receita         = arrecadacao - premios - devolucoes
   const custodia        = (userBalances ?? []).reduce((s, u) => s + (u.virtual_balance ?? 0), 0)
   const net             = totalDeposited - totalWithdrawn
+  // Quanto a plataforma pode sacar com segurança: saldo estimado no MP menos o que pertence aos usuários
+  const disponivel      = net - custodia
 
   const chartData = buildDailyData(recentDeps ?? [], recentWits ?? [], 30)
 
@@ -238,6 +240,48 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gold-400">Financeiro</h1>
+
+      {/* ── Indicador principal: Disponível para retirada ── */}
+      <div className={`rounded-2xl p-5 border-2 flex flex-col sm:flex-row sm:items-center gap-4 ${
+        disponivel >= 0
+          ? 'bg-emerald-500/5 border-emerald-500/30'
+          : 'bg-rose-500/5 border-rose-500/30'
+      }`}>
+        <div className="flex-1">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">
+            Disponível para Retirada
+          </p>
+          <p className={`text-4xl font-bold font-mono ${disponivel >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+            {fmtBrl(disponivel)}
+          </p>
+          <p className="text-xs text-slate-500 mt-2">
+            Saldo estimado no Mercado Pago menos o que pertence aos usuários (custódia).
+            Apenas esse valor é seguro sacar para sua conta.
+          </p>
+        </div>
+        <div className="flex flex-col gap-1.5 text-xs font-mono min-w-48">
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-slate-400">Depósitos recebidos</span>
+            <span className="text-emerald-400">+{fmtBrl(totalDeposited)}</span>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-slate-400">Saques enviados</span>
+            <span className="text-rose-400">−{fmtBrl(totalWithdrawn)}</span>
+          </div>
+          <div className="border-t border-slate-700 pt-1.5 flex items-center justify-between gap-4">
+            <span className="text-slate-400">Saldo MP estimado</span>
+            <span className="text-slate-200">{fmtBrl(net)}</span>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-slate-400">Custódia usuários</span>
+            <span className="text-rose-400">−{fmtBrl(custodia)}</span>
+          </div>
+          <div className="border-t border-slate-700 pt-1.5 flex items-center justify-between gap-4 font-bold">
+            <span className="text-slate-300">Disponível</span>
+            <span className={disponivel >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{fmtBrl(disponivel)}</span>
+          </div>
+        </div>
+      </div>
 
       {/* ── Seção 1: Fluxo PIX ── */}
       <div>
