@@ -71,16 +71,17 @@ function KpiCard({
 }
 
 // SVG bar chart — rendered server-side, no JS required
+// viewBox = 640x220 = tamanho mínimo de render, preserveAspectRatio="none" estica pro desktop
 function FlowChart({ data }: { data: Array<{ label: string; dep: number; wit: number }> }) {
-  const W = 1200
-  const H = 260
-  const PAD = { top: 32, right: 20, bottom: 40, left: 72 }
+  const W = 640
+  const H = 220
+  const PAD = { top: 28, right: 16, bottom: 36, left: 56 }
   const chartW = W - PAD.left - PAD.right
   const chartH = H - PAD.top - PAD.bottom
   const maxVal = Math.max(...data.map(d => Math.max(d.dep, d.wit)), 10)
   const barSlot = chartW / data.length
-  const groupW = Math.max(barSlot * 0.72, 4)
-  const barW = groupW / 2 - 1.5
+  const groupW = Math.max(barSlot * 0.7, 3)
+  const barW = groupW / 2 - 1
 
   const yTicks = [0, 0.25, 0.5, 0.75, 1]
 
@@ -92,54 +93,54 @@ function FlowChart({ data }: { data: Array<{ label: string; dep: number; wit: nu
 
   return (
     <div style={{ minWidth: '100%', width: '640px', height: '220px' }}>
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="none">
-      {/* Grid lines */}
-      {yTicks.map(t => {
-        const y = PAD.top + chartH * (1 - t)
-        const val = maxVal * t
-        return (
-          <g key={t}>
-            <line x1={PAD.left} x2={W - PAD.right} y1={y} y2={y}
-              stroke={t === 0 ? '#334155' : '#1e293b'} strokeWidth={t === 0 ? 1.5 : 1} />
-            <text x={PAD.left - 8} y={y + 4} textAnchor="end" fontSize={13} fill="#64748b">
-              {fmtY(val)}
-            </text>
-          </g>
-        )
-      })}
-
-      {/* Bars */}
-      {data.map((d, i) => {
-        const cx = PAD.left + i * barSlot + barSlot / 2
-        const depH = Math.max((d.dep / maxVal) * chartH, d.dep > 0 ? 3 : 0)
-        const witH = Math.max((d.wit / maxVal) * chartH, d.wit > 0 ? 3 : 0)
-        const showLabel = data.length <= 30 && i % Math.ceil(data.length / 10) === 0
-
-        return (
-          <g key={d.label}>
-            {depH > 0 && (
-              <rect x={cx - groupW / 2} y={PAD.top + chartH - depH} width={barW} height={depH}
-                fill="#10b981" opacity={0.85} rx={2} />
-            )}
-            {witH > 0 && (
-              <rect x={cx} y={PAD.top + chartH - witH} width={barW} height={witH}
-                fill="#f43f5e" opacity={0.85} rx={2} />
-            )}
-            {showLabel && (
-              <text x={cx} y={H - 8} textAnchor="middle" fontSize={12} fill="#64748b">
-                {d.label.slice(5)}
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="none">
+        {/* Grid lines */}
+        {yTicks.map(t => {
+          const y = PAD.top + chartH * (1 - t)
+          const val = maxVal * t
+          return (
+            <g key={t}>
+              <line x1={PAD.left} x2={W - PAD.right} y1={y} y2={y}
+                stroke={t === 0 ? '#334155' : '#1e293b'} strokeWidth={t === 0 ? 1.5 : 1} />
+              <text x={PAD.left - 6} y={y + 4} textAnchor="end" fontSize={11} fill="#64748b">
+                {fmtY(val)}
               </text>
-            )}
-          </g>
-        )
-      })}
+            </g>
+          )
+        })}
 
-      {/* Legend */}
-      <rect x={PAD.left} y={8} width={12} height={12} fill="#10b981" rx={2} />
-      <text x={PAD.left + 16} y={19} fontSize={13} fill="#94a3b8">Depósitos</text>
-      <rect x={PAD.left + 100} y={8} width={12} height={12} fill="#f43f5e" rx={2} />
-      <text x={PAD.left + 116} y={19} fontSize={13} fill="#94a3b8">Saques</text>
-    </svg>
+        {/* Bars */}
+        {data.map((d, i) => {
+          const cx = PAD.left + i * barSlot + barSlot / 2
+          const depH = Math.max((d.dep / maxVal) * chartH, d.dep > 0 ? 3 : 0)
+          const witH = Math.max((d.wit / maxVal) * chartH, d.wit > 0 ? 3 : 0)
+          const showLabel = data.length <= 30 && i % Math.ceil(data.length / 10) === 0
+
+          return (
+            <g key={d.label}>
+              {depH > 0 && (
+                <rect x={cx - groupW / 2} y={PAD.top + chartH - depH} width={barW} height={depH}
+                  fill="#10b981" opacity={0.85} rx={2} />
+              )}
+              {witH > 0 && (
+                <rect x={cx} y={PAD.top + chartH - witH} width={barW} height={witH}
+                  fill="#f43f5e" opacity={0.85} rx={2} />
+              )}
+              {showLabel && (
+                <text x={cx} y={H - 6} textAnchor="middle" fontSize={11} fill="#64748b">
+                  {d.label.slice(5)}
+                </text>
+              )}
+            </g>
+          )
+        })}
+
+        {/* Legend */}
+        <rect x={PAD.left} y={6} width={10} height={10} fill="#10b981" rx={2} />
+        <text x={PAD.left + 14} y={15} fontSize={11} fill="#94a3b8">Depósitos</text>
+        <rect x={PAD.left + 82} y={6} width={10} height={10} fill="#f43f5e" rx={2} />
+        <text x={PAD.left + 96} y={15} fontSize={11} fill="#94a3b8">Saques</text>
+      </svg>
     </div>
   )
 }
