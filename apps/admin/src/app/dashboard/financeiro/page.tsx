@@ -70,19 +70,23 @@ function KpiCard({
   )
 }
 
-// SVG bar chart — rendered server-side, no JS required
-// viewBox = 640x220 = tamanho mínimo de render, preserveAspectRatio="none" estica pro desktop
-function FlowChart({ data }: { data: Array<{ label: string; dep: number; wit: number }> }) {
-  const W = 640
-  const H = 220
-  const PAD = { top: 28, right: 16, bottom: 36, left: 56 }
-  const chartW = W - PAD.left - PAD.right
-  const chartH = H - PAD.top - PAD.bottom
+type ChartConfig = {
+  W: number; H: number
+  pad: { top: number; right: number; bottom: number; left: number }
+  fs: number
+}
+
+function ChartSvg({ data, cfg }: {
+  data: Array<{ label: string; dep: number; wit: number }>
+  cfg: ChartConfig
+}) {
+  const { W, H, pad, fs } = cfg
+  const chartW = W - pad.left - pad.right
+  const chartH = H - pad.top - pad.bottom
   const maxVal = Math.max(...data.map(d => Math.max(d.dep, d.wit)), 10)
   const barSlot = chartW / data.length
   const groupW = Math.max(barSlot * 0.7, 3)
-  const barW = groupW / 2 - 1
-
+  const barW = Math.max(groupW / 2 - 1, 1.5)
   const yTicks = [0, 0.25, 0.5, 0.75, 1]
 
   function fmtY(val: number) {
@@ -92,56 +96,64 @@ function FlowChart({ data }: { data: Array<{ label: string; dep: number; wit: nu
   }
 
   return (
-    <div style={{ minWidth: '100%', width: '640px', height: '220px' }}>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="none">
-        {/* Grid lines */}
-        {yTicks.map(t => {
-          const y = PAD.top + chartH * (1 - t)
-          const val = maxVal * t
-          return (
-            <g key={t}>
-              <line x1={PAD.left} x2={W - PAD.right} y1={y} y2={y}
-                stroke={t === 0 ? '#334155' : '#1e293b'} strokeWidth={t === 0 ? 1.5 : 1} />
-              <text x={PAD.left - 6} y={y + 4} textAnchor="end" fontSize={11} fill="#64748b">
-                {fmtY(val)}
+    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ display: 'block' }}>
+      {yTicks.map(t => {
+        const y = pad.top + chartH * (1 - t)
+        return (
+          <g key={t}>
+            <line x1={pad.left} x2={W - pad.right} y1={y} y2={y}
+              stroke={t === 0 ? '#334155' : '#1e2a3a'} strokeWidth={t === 0 ? 1.5 : 1} />
+            <text x={pad.left - 6} y={y + fs * 0.35} textAnchor="end" fontSize={fs} fill="#64748b">
+              {fmtY(maxVal * t)}
+            </text>
+          </g>
+        )
+      })}
+
+      {data.map((d, i) => {
+        const cx = pad.left + i * barSlot + barSlot / 2
+        const depH = Math.max((d.dep / maxVal) * chartH, d.dep > 0 ? 3 : 0)
+        const witH = Math.max((d.wit / maxVal) * chartH, d.wit > 0 ? 3 : 0)
+        const showLabel = i % Math.ceil(data.length / 8) === 0
+        return (
+          <g key={d.label}>
+            {depH > 0 && <rect x={cx - groupW / 2} y={pad.top + chartH - depH} width={barW} height={depH} fill="#10b981" opacity={0.85} rx={2} />}
+            {witH > 0 && <rect x={cx} y={pad.top + chartH - witH} width={barW} height={witH} fill="#f43f5e" opacity={0.85} rx={2} />}
+            {showLabel && (
+              <text x={cx} y={H - 5} textAnchor="middle" fontSize={fs - 1} fill="#64748b">
+                {d.label.slice(5)}
               </text>
-            </g>
-          )
-        })}
+            )}
+          </g>
+        )
+      })}
 
-        {/* Bars */}
-        {data.map((d, i) => {
-          const cx = PAD.left + i * barSlot + barSlot / 2
-          const depH = Math.max((d.dep / maxVal) * chartH, d.dep > 0 ? 3 : 0)
-          const witH = Math.max((d.wit / maxVal) * chartH, d.wit > 0 ? 3 : 0)
-          const showLabel = data.length <= 30 && i % Math.ceil(data.length / 10) === 0
+      <rect x={pad.left} y={6} width={fs - 2} height={fs - 2} fill="#10b981" rx={2} />
+      <text x={pad.left + fs + 2} y={6 + fs * 0.75} fontSize={fs} fill="#94a3b8">Depósitos</text>
+      <rect x={pad.left + fs * 8} y={6} width={fs - 2} height={fs - 2} fill="#f43f5e" rx={2} />
+      <text x={pad.left + fs * 8 + fs + 2} y={6 + fs * 0.75} fontSize={fs} fill="#94a3b8">Saques</text>
+    </svg>
+  )
+}
 
-          return (
-            <g key={d.label}>
-              {depH > 0 && (
-                <rect x={cx - groupW / 2} y={PAD.top + chartH - depH} width={barW} height={depH}
-                  fill="#10b981" opacity={0.85} rx={2} />
-              )}
-              {witH > 0 && (
-                <rect x={cx} y={PAD.top + chartH - witH} width={barW} height={witH}
-                  fill="#f43f5e" opacity={0.85} rx={2} />
-              )}
-              {showLabel && (
-                <text x={cx} y={H - 6} textAnchor="middle" fontSize={11} fill="#64748b">
-                  {d.label.slice(5)}
-                </text>
-              )}
-            </g>
-          )
-        })}
+// Dois tamanhos: mobile (scroll horizontal) e desktop (fill width)
+function FlowChart({ data }: { data: Array<{ label: string; dep: number; wit: number }> }) {
+  const mobileCfg: ChartConfig = { W: 480, H: 200, pad: { top: 28, right: 12, bottom: 34, left: 44 }, fs: 12 }
+  const desktopCfg: ChartConfig = { W: 900, H: 240, pad: { top: 32, right: 16, bottom: 38, left: 56 }, fs: 13 }
 
-        {/* Legend */}
-        <rect x={PAD.left} y={6} width={10} height={10} fill="#10b981" rx={2} />
-        <text x={PAD.left + 14} y={15} fontSize={11} fill="#94a3b8">Depósitos</text>
-        <rect x={PAD.left + 82} y={6} width={10} height={10} fill="#f43f5e" rx={2} />
-        <text x={PAD.left + 96} y={15} fontSize={11} fill="#94a3b8">Saques</text>
-      </svg>
-    </div>
+  return (
+    <>
+      {/* Mobile: 480px fixo, scroll horizontal */}
+      <div className="md:hidden overflow-x-auto">
+        <ChartSvg data={data} cfg={mobileCfg} />
+      </div>
+      {/* Desktop: 900px, fill container */}
+      <div className="hidden md:block w-full overflow-x-auto">
+        <div style={{ minWidth: '100%', width: '900px' }}>
+          <ChartSvg data={data} cfg={desktopCfg} />
+        </div>
+      </div>
+    </>
   )
 }
 
