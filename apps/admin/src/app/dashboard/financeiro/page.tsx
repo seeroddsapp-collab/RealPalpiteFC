@@ -91,7 +91,8 @@ function FlowChart({ data }: { data: Array<{ label: string; dep: number; wit: nu
   }
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minHeight: 200 }}>
+    <div className="h-40 sm:h-52 md:h-64 w-full">
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="none">
       {/* Grid lines */}
       {yTicks.map(t => {
         const y = PAD.top + chartH * (1 - t)
@@ -139,6 +140,7 @@ function FlowChart({ data }: { data: Array<{ label: string; dep: number; wit: nu
       <rect x={PAD.left + 100} y={8} width={12} height={12} fill="#f43f5e" rx={2} />
       <text x={PAD.left + 116} y={19} fontSize={13} fill="#94a3b8">Saques</text>
     </svg>
+    </div>
   )
 }
 
@@ -272,7 +274,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
             Apenas esse valor é seguro sacar para sua conta.
           </p>
         </div>
-        <div className="flex flex-col gap-1.5 text-xs font-mono min-w-48">
+        <div className="flex flex-col gap-1.5 text-xs font-mono w-full sm:min-w-48 sm:w-auto">
           <div className="flex items-center justify-between gap-4">
             <span className="text-slate-400">Depósitos recebidos</span>
             <span className="text-emerald-400">+{fmtBrl(totalDeposited)}</span>
