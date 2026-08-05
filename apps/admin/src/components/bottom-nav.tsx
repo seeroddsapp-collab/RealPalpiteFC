@@ -33,19 +33,20 @@ export function BottomNav() {
   const financeiroActive = pathname === '/dashboard/financeiro' || pathname.startsWith('/dashboard/financeiro/')
 
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white dark:bg-navy-900 border-t border-stone-200 dark:border-navy-800 h-16 relative">
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white dark:bg-navy-900 border-t border-stone-200 dark:border-navy-800 h-16">
+      {/* div interno com relative — não pode usar relative no elemento fixed */}
+      <div className="relative h-full flex items-center px-1">
 
-      {/* FAB central — absolute relativo à <nav> (h-16=64px), não ao div interno */}
-      <Link
-        href="/dashboard/financeiro"
-        className={`absolute left-1/2 -translate-x-1/2 -top-8 w-16 h-16 z-10 rounded-full flex items-center justify-center shadow-xl shadow-gold-500/40 border-4 border-white dark:border-navy-950 transition-transform active:scale-95 ${
-          financeiroActive ? 'bg-gold-600' : 'bg-gold-500 hover:bg-gold-600'
-        }`}
-      >
-        <Wallet size={24} className="text-white" />
-      </Link>
+        {/* FAB central — absolute relativo ao div interno (h-16=64px) */}
+        <Link
+          href="/dashboard/financeiro"
+          className={`absolute left-1/2 -translate-x-1/2 bottom-full translate-y-8 w-16 h-16 z-10 rounded-full flex items-center justify-center shadow-xl shadow-gold-500/40 border-4 border-white dark:border-navy-950 transition-transform active:scale-95 ${
+            financeiroActive ? 'bg-gold-600' : 'bg-gold-500 hover:bg-gold-600'
+          }`}
+        >
+          <Wallet size={24} className="text-white" />
+        </Link>
 
-      <div className="flex items-center h-full px-1">
         <NavBtn href="/dashboard" label="Início" Icon={LayoutDashboard} exact />
         <NavBtn href="/dashboard/partidas" label="Partidas" Icon={CalendarDays} />
 
@@ -65,6 +66,7 @@ export function BottomNav() {
           <MoreHorizontal size={20} />
           <span className="text-[10px] font-medium leading-tight">Mais</span>
         </button>
+
       </div>
     </nav>
   )
