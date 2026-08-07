@@ -86,6 +86,7 @@ export type Database = {
           football_data_match_id: string | null;
           home_team_logo_url: string | null;
           away_team_logo_url: string | null;
+          groups_notified: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -101,6 +102,7 @@ export type Database = {
           football_data_match_id?: string | null;
           home_team_logo_url?: string | null;
           away_team_logo_url?: string | null;
+          groups_notified?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -116,6 +118,7 @@ export type Database = {
           football_data_match_id?: string | null;
           home_team_logo_url?: string | null;
           away_team_logo_url?: string | null;
+          groups_notified?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -417,6 +420,33 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      telegram_groups: {
+        Row: {
+          id: string;
+          chat_id: number;
+          title: string | null;
+          added_by_telegram_id: number | null;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          chat_id: number;
+          title?: string | null;
+          added_by_telegram_id?: number | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          chat_id?: number;
+          title?: string | null;
+          added_by_telegram_id?: number | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
       };
     };
     Views: {

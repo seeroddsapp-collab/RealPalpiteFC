@@ -19,6 +19,7 @@ export type Notification = {
 export type ResolutionResult = {
   scenario: string;
   notifications: Notification[];
+  winnerInfo: { username: string | null; prize: number } | null;
 };
 
 function buildEvalContext(pool: PoolRow, prediction: Json, result: MatchResult): EvaluationContext {
@@ -61,13 +62,13 @@ export async function resolvePool(
     await db.pools.close(pool.id);
   }
   if (pool.status === 'resolved' || pool.status === 'cancelled') {
-    return { scenario: 'already_done', notifications: [] };
+    return { scenario: 'already_done', notifications: [], winnerInfo: null };
   }
 
   const dbEntries = await db.entries.findByPool(pool.id);
   if (dbEntries.length === 0) {
     await db.pools.cancel(pool.id);
-    return { scenario: 'no_entries', notifications: [] };
+    return { scenario: 'no_entries', notifications: [], winnerInfo: null };
   }
 
   // Avalia palpites (Regra 9: apenas tempo normal)
@@ -85,11 +86,17 @@ export async function resolvePool(
   await db.entries.resolveEntries(pool.id, winnerIds);
 
   const notifications: Notification[] = [];
+  let winnerInfo: { username: string | null; prize: number } | null = null;
 
   // Cria transações e atualiza saldos
   for (const payout of calcResult.payouts) {
     const user = await db.users.findById(payout.userId);
     if (!user) continue;
+
+    const isWinner = entryInputs.find(e => e.userId === payout.userId)?.isWinner ?? false;
+    if (isWinner && !winnerInfo) {
+      winnerInfo = { username: user.username ?? null, prize: payout.amount };
+    }
 
     const type = calcResult.scenario === 'with_winners'
       ? 'prize'
@@ -129,5 +136,5 @@ export async function resolvePool(
 
   await db.pools.resolve(pool.id);
 
-  return { scenario: calcResult.scenario, notifications };
+  return { scenario: calcResult.scenario, notifications, winnerInfo };
 }

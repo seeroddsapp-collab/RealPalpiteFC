@@ -25,6 +25,7 @@ import { buildAlterarPixScene, ALTERAR_PIX_SCENE } from './scenes/alterar-pix.sc
 import { startClosePoolsCron } from './cron/close-pools.cron';
 import { startCheckResultsCron } from './cron/check-results.cron';
 import { startMatchSyncCron, syncMatches } from './services/sync-matches.service';
+import { handleGroupBoloes, handleGroupRanking } from './services/group-notifications.service';
 import { MercadoPagoService } from './services/mercadopago.service';
 import { fmtBrl } from './formatters/messages';
 
@@ -64,6 +65,64 @@ const depositarScene   = buildDepositarScene(db, mp);
 const sacarScene       = buildSacarScene(db, mp);
 const alterarPixScene  = buildAlterarPixScene(db);
 const stage = new Scenes.Stage<BotContext>([createPoolScene, depositarScene, sacarScene, alterarPixScene]);
+
+// ── Handlers de grupos (antes do authMiddleware) ──────────────────────────
+// my_chat_member: bot adicionado ou removido de um grupo
+bot.on('my_chat_member', async (ctx) => {
+  const update = ctx.myChatMember;
+  const chat = update.chat;
+  if (chat.type !== 'group' && chat.type !== 'supergroup') return;
+
+  const newStatus = update.new_chat_member.status;
+  const chatId = chat.id;
+  const title = 'title' in chat ? chat.title : null;
+  const addedBy = update.from.id;
+
+  if (newStatus === 'member' || newStatus === 'administrator') {
+    const { error: upsertErr } = await db.client
+      .from('telegram_groups')
+      .upsert(
+        { chat_id: chatId, title, added_by_telegram_id: addedBy, is_active: true },
+        { onConflict: 'chat_id' },
+      );
+    if (upsertErr) console.error('[groups] Erro ao registrar grupo:', upsertErr);
+
+    console.log(`[groups] Bot adicionado ao grupo: "${title}" (${chatId})`);
+
+    await ctx.telegram
+      .sendMessage(
+        chatId,
+        `🏆 *RealPalpiteFC chegou!*\n\nOlá, grupo! Sou o bot oficial dos bolões.\n\nUse /boloes para ver as partidas abertas e /ranking para os maiores vencedores.`,
+        { parse_mode: 'Markdown' },
+      )
+      .catch(() => {});
+  } else if (newStatus === 'left' || newStatus === 'kicked') {
+    const { error: updateErr } = await db.client
+      .from('telegram_groups')
+      .update({ is_active: false })
+      .eq('chat_id', chatId);
+    if (updateErr) console.error('[groups] Erro ao desativar grupo:', updateErr);
+
+    console.log(`[groups] Bot removido do grupo: "${title}" (${chatId})`);
+  }
+});
+
+// Comandos de grupo — respondidos sem passar pelo authMiddleware
+bot.use(async (ctx, next) => {
+  const chatType = (ctx.chat as any)?.type;
+  if (chatType !== 'group' && chatType !== 'supergroup') return next();
+
+  const text: string = (ctx.message as any)?.text ?? '';
+  if (text.startsWith('/boloes')) {
+    await handleGroupBoloes(ctx, db);
+    return;
+  }
+  if (text.startsWith('/ranking')) {
+    await handleGroupRanking(ctx, db);
+    return;
+  }
+  // Ignora outras mensagens de grupo
+});
 
 // Middleware (ordem importa)
 bot.use(session());
@@ -213,11 +272,13 @@ async function handlePixWebhook(
 
 // ── Inicialização ─────────────────────────────────────────────────────────
 async function main() {
-  startMatchSyncCron(db, sportsData);
+  const me = await bot.telegram.getMe();
+  const botUsername = me.username ?? '';
+
+  startMatchSyncCron(db, sportsData, bot, botUsername);
   startClosePoolsCron(db, bot);
   startCheckResultsCron(db, sportsData, bot);
 
-  const me = await bot.telegram.getMe();
   const webhookDomain = process.env.RENDER_EXTERNAL_URL;
 
   if (webhookDomain) {
@@ -245,7 +306,7 @@ async function main() {
             res.end('Unauthorized');
             return;
           }
-          syncMatches(db, sportsData)
+          syncMatches(db, sportsData, bot, botUsername)
             .then(result => {
               res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify(result));

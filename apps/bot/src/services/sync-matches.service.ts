@@ -1,5 +1,8 @@
+import type { Telegraf } from 'telegraf';
+import type { BotContext } from '../context';
 import type { Db, PoolInsert, PoolRow } from '@realpalpitefc/database';
 import type { SportsDataService } from '@realpalpitefc/sports-data';
+import { notifyGroupsPoolsOpened } from './group-notifications.service';
 
 const DAYS_AHEAD = 21;
 const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 horas
@@ -40,6 +43,8 @@ async function createMissingPools(
 export async function syncMatches(
   db: Db,
   sportsData: SportsDataService,
+  bot?: Telegraf<BotContext>,
+  botUsername?: string,
 ): Promise<{ inserted: number; updated: number; errors: string[] }> {
   const championships = await db.championships.findActive();
   const active = championships.filter(c => c.espn_code);
@@ -108,16 +113,27 @@ export async function syncMatches(
     }
   }
 
+  if (bot && botUsername) {
+    await notifyGroupsPoolsOpened(db, bot, botUsername).catch(err =>
+      console.error('[sync] Falha ao notificar grupos sobre bolões abertos:', err),
+    );
+  }
+
   return { inserted: totalInserted, updated: totalUpdated, errors };
 }
 
-export function startMatchSyncCron(db: Db, sportsData: SportsDataService): void {
-  syncMatches(db, sportsData).catch(err =>
+export function startMatchSyncCron(
+  db: Db,
+  sportsData: SportsDataService,
+  bot?: Telegraf<BotContext>,
+  botUsername?: string,
+): void {
+  syncMatches(db, sportsData, bot, botUsername).catch(err =>
     console.error('[sync] Falha na sincronização inicial:', err),
   );
 
   setInterval(() => {
-    syncMatches(db, sportsData).catch(err =>
+    syncMatches(db, sportsData, bot, botUsername).catch(err =>
       console.error('[sync] Falha na sincronização periódica:', err),
     );
   }, SYNC_INTERVAL_MS);

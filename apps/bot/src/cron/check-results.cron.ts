@@ -4,6 +4,7 @@ import type { Db } from '@realpalpitefc/database';
 import type { SportsDataService } from '@realpalpitefc/sports-data';
 import type { MatchRow } from '@realpalpitefc/database';
 import { resolvePool } from '../services/resolution.service';
+import { notifyGroupsResult } from '../services/group-notifications.service';
 
 const INTERVAL_MS = 2 * 60_000; // a cada 2 minutos
 
@@ -51,12 +52,23 @@ async function processMatch(
       poolsForMatch = [...poolsForMatch, ...openNotYetListed];
     }
 
+    let groupScenario: string | null = null;
+    let groupWinnerUsername: string | null = null;
+    let groupPrize = 0;
+
     for (const pool of poolsForMatch) {
       const matchResult = providerMatch.score
         ? { homeScore: providerMatch.score.homeScore, awayScore: providerMatch.score.awayScore }
         : { homeScore: 0, awayScore: 0 };
 
       const result = await resolvePool(db, pool, matchResult, cancelled);
+
+      // Coleta info para notificação de grupo (apenas na primeira pool resolvida de verdade)
+      if (!groupScenario && result.scenario !== 'already_done' && result.scenario !== 'no_entries') {
+        groupScenario = result.scenario;
+        groupWinnerUsername = result.winnerInfo?.username ?? null;
+        groupPrize = result.winnerInfo?.prize ?? 0;
+      }
 
       // Envia notificações push para cada usuário
       for (const notif of result.notifications) {
@@ -66,6 +78,12 @@ async function processMatch(
       }
 
       console.log(`[check-results] Pool ${pool.id} resolvida — cenário: ${result.scenario}`);
+    }
+
+    // Notifica grupos uma única vez por partida
+    if (groupScenario) {
+      await notifyGroupsResult(db, bot, match, groupScenario, groupWinnerUsername, groupPrize)
+        .catch(err => console.warn('[check-results] Falha ao notificar grupos:', err));
     }
   }
 }
