@@ -187,7 +187,11 @@ export async function handleGroupResultados(ctx: any, db: Db, botUsername: strin
       .limit(5);
 
     if (!matches || matches.length === 0) {
-      await ctx.reply('Nenhum resultado disponível ainda. Fique de olho!');
+      await ctx.reply(
+        `Nenhum resultado disponível ainda. Fique de olho!\n\n` +
+        `👉 [Acesse o bot e faça seu palpite](https://t.me/${botUsername})`,
+        { parse_mode: 'Markdown' },
+      );
       return;
     }
 
