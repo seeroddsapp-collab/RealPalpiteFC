@@ -111,7 +111,12 @@ export async function handleGroupBoloes(ctx: any, db: Db, botUsername: string): 
       .limit(10);
 
     if (!matches || matches.length === 0) {
-      await ctx.reply('Nenhum bolão aberto para hoje ou amanhã. Fique de olho!');
+      await ctx.reply(
+        `Sem bolões abertos hoje ou amanhã.\n\n` +
+        `Navegue pelos campeonatos disponíveis no bot para ver os próximos jogos e garantir seu palpite!\n\n` +
+        `👉 [Abrir o bot](https://t.me/${botUsername})`,
+        { parse_mode: 'Markdown' },
+      );
       return;
     }
 
