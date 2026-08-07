@@ -92,7 +92,14 @@ bot.on('my_chat_member', async (ctx) => {
     await ctx.telegram
       .sendMessage(
         chatId,
-        `🏆 *RealPalpiteFC chegou!*\n\nOlá, grupo! Sou o bot oficial dos bolões.\n\nUse /boloes para ver as partidas abertas e /ranking para os maiores vencedores.`,
+        `🏆 *RealPalpiteFC chegou!*\n\n` +
+        `Olá, grupo! Sou o bot oficial dos bolões esportivos.\n\n` +
+        `*Comandos disponíveis:*\n` +
+        `/boloes — bolões abertos hoje e amanhã\n` +
+        `/resultados — últimos resultados\n` +
+        `/ranking — maiores vencedores\n` +
+        `/regras — como funciona\n\n` +
+        `Para apostar, fale comigo em privado! 👇`,
         { parse_mode: 'Markdown' },
       )
       .catch(() => {});
@@ -104,6 +111,29 @@ bot.on('my_chat_member', async (ctx) => {
     if (updateErr) console.error('[groups] Erro ao desativar grupo:', updateErr);
 
     console.log(`[groups] Bot removido do grupo: "${title}" (${chatId})`);
+  }
+});
+
+// Boas-vindas para novos membros do grupo
+bot.on('message', async (ctx, next) => {
+  const chatType = (ctx.chat as any)?.type;
+  if (chatType !== 'group' && chatType !== 'supergroup') return next();
+
+  const newMembers = (ctx.message as any)?.new_chat_members as Array<{ id: number; is_bot: boolean; first_name?: string; username?: string }> | undefined;
+  if (!newMembers || newMembers.length === 0) return next();
+
+  const botUser = (bot as any).botInfo?.username ?? '';
+  for (const member of newMembers) {
+    if (member.is_bot) continue;
+    const name = member.username ? `@${member.username}` : member.first_name ?? 'novo membro';
+    await ctx.reply(
+      `👋 Bem-vindo(a), ${name}! 🏆\n\n` +
+      `Aqui você acompanha os bolões do RealPalpiteFC.\n\n` +
+      `Para apostar, fale comigo em privado:\n` +
+      `👉 @${botUser}\n\n` +
+      `Comandos do grupo:\n` +
+      `/boloes · /resultados · /ranking · /regras`,
+    ).catch(() => {});
   }
 });
 
