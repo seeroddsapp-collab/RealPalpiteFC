@@ -277,7 +277,7 @@ async function main() {
 
   startMatchSyncCron(db, sportsData, bot, botUsername);
   startClosePoolsCron(db, bot);
-  startCheckResultsCron(db, sportsData, bot);
+  startCheckResultsCron(db, sportsData, bot, botUsername);
 
   const webhookDomain = process.env.RENDER_EXTERNAL_URL;
 

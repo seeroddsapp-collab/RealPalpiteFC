@@ -1,13 +1,24 @@
 import type { Telegraf } from 'telegraf';
 import type { BotContext } from '../context';
 import type { Db } from '@realpalpitefc/database';
+import { fmtBrl } from '../formatters/messages';
+
+export type MatchGroupSummary = {
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number;
+  awayScore: number;
+  scenario: string;
+  totalWinners: number;
+  totalPrizeBrl: number;
+};
 
 async function getActiveGroupIds(db: Db): Promise<number[]> {
   const { data } = await db.client
     .from('telegram_groups')
     .select('chat_id')
     .eq('is_active', true);
-  return (data ?? []).map((r: { chat_id: number | string }) => Number(r.chat_id));
+  return (data ?? []).map((r: { chat_id: number }) => Number(r.chat_id));
 }
 
 function fmtKickoff(iso: string): string {
@@ -61,33 +72,32 @@ export async function notifyGroupsPoolsOpened(
   }
 }
 
-export async function notifyGroupsResult(
+export async function notifyGroupsBatchResults(
   db: Db,
   bot: Telegraf<BotContext>,
-  match: { home_team: string; away_team: string },
-  scenario: string,
-  winnerUsername: string | null,
-  prize: number,
+  botUsername: string,
+  summaries: MatchGroupSummary[],
 ): Promise<void> {
-  if (scenario !== 'with_winners' && scenario !== 'no_winners') return;
-
   const groupIds = await getActiveGroupIds(db);
   if (groupIds.length === 0) return;
 
-  let msg: string;
-  if (scenario === 'with_winners') {
-    const winner = winnerUsername ? `@${winnerUsername}` : 'Um sortudo';
-    msg =
-      `🏆 *Resultado do bolão!*\n\n` +
-      `*${match.home_team} x ${match.away_team}*\n\n` +
-      `🥇 ${winner} ganhou *R$${prize.toFixed(2)}*!\n` +
-      `Abra o bot para ver detalhes e participar do próximo bolão.`;
-  } else {
-    msg =
-      `📋 *Resultado do bolão!*\n\n` +
-      `*${match.home_team} x ${match.away_team}*\n\n` +
-      `Nenhum acertador desta rodada — todos os palpites foram devolvidos.`;
-  }
+  const lines = summaries.map(m => {
+    const score = `${m.homeScore} x ${m.awayScore}`;
+    if (m.scenario === 'with_winners') {
+      const plural = m.totalWinners > 1 ? 's' : '';
+      return (
+        `⚽ *${m.homeTeam} ${score} ${m.awayTeam}*\n` +
+        `🥇 ${m.totalWinners} premiado${plural} · *${fmtBrl(m.totalPrizeBrl)}* distribuídos`
+      );
+    }
+    return (
+      `⚽ *${m.homeTeam} ${score} ${m.awayTeam}*\n` +
+      `📋 Sem acertadores · palpites devolvidos`
+    );
+  });
+
+  const title = summaries.length === 1 ? `🏆 *Resultado do Bolão*` : `🏆 *Resultados dos Bolões*`;
+  const msg = `${title}\n\n${lines.join('\n\n')}\n\n👉 [Ver seus resultados](https://t.me/${botUsername})`;
 
   for (const chatId of groupIds) {
     await bot.telegram
@@ -120,7 +130,6 @@ export async function handleGroupBoloes(ctx: any, db: Db, botUsername: string): 
       return;
     }
 
-    // Agrupa por campeonato
     const byChamp = new Map<string, typeof matches>();
     for (const m of matches) {
       const champ = (m.championships as any)?.name ?? 'Campeonato';
@@ -170,7 +179,7 @@ export async function handleGroupRanking(ctx: any, db: Db): Promise<void> {
       const [userId, total] = top5[i];
       const user = await db.users.findById(userId);
       const name = user?.username ? `@${user.username}` : 'Anônimo';
-      msg += `${medals[i]} ${name} — *R$${total.toFixed(2)}*\n`;
+      msg += `${medals[i]} ${name} — *${fmtBrl(total)}*\n`;
     }
 
     await ctx.reply(msg, { parse_mode: 'Markdown' });
