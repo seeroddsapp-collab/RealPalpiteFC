@@ -153,6 +153,87 @@ export async function handleGroupBoloes(ctx: any, db: Db, botUsername: string): 
   }
 }
 
+export async function handleGroupRegras(ctx: any, botUsername: string): Promise<void> {
+  try {
+    const msg =
+      `📖 *Como Funciona o RealPalpiteFC*\n\n` +
+      `🏆 *Com acertadores*\n` +
+      `Prêmio = 95% do total apostado, dividido entre os vencedores.\n\n` +
+      `📋 *Sem acertadores*\n` +
+      `90% devolvido proporcionalmente a cada apostador.\n\n` +
+      `❌ *Partida cancelada ou adiada*\n` +
+      `100% devolvido a todos.\n\n` +
+      `👤 *Apenas 1 apostador*\n` +
+      `100% devolvido.\n\n` +
+      `⚙️ *Regras gerais*\n` +
+      `• Lista fecha 5 min antes do kickoff\n` +
+      `• Máximo 2 entradas por lista\n` +
+      `• Apenas tempo normal conta (sem prorrogação)\n\n` +
+      `👉 [Acessar o bot](https://t.me/${botUsername})`;
+
+    await ctx.reply(msg, { parse_mode: 'Markdown' });
+  } catch (err) {
+    console.error('[groups /regras]', err);
+  }
+}
+
+export async function handleGroupResultados(ctx: any, db: Db, botUsername: string): Promise<void> {
+  try {
+    const { data: matches } = await db.client
+      .from('matches')
+      .select('id, home_team, away_team, result')
+      .eq('status', 'finished')
+      .order('kickoff_at', { ascending: false })
+      .limit(5);
+
+    if (!matches || matches.length === 0) {
+      await ctx.reply('Nenhum resultado disponível ainda. Fique de olho!');
+      return;
+    }
+
+    let msg = `🏆 *Últimos Resultados*\n\n`;
+
+    for (const match of matches) {
+      const score = match.result as { homeScore: number; awayScore: number } | null;
+      const scoreStr = score ? `${score.homeScore} x ${score.awayScore}` : 'x';
+
+      const { data: pools } = await db.client
+        .from('pools')
+        .select('id')
+        .eq('match_id', match.id)
+        .eq('status', 'resolved');
+
+      const poolIds = (pools ?? []).map((p: { id: string }) => p.id);
+      let totalWinners = 0;
+      let totalPrize = 0;
+
+      if (poolIds.length > 0) {
+        const { data: prizes } = await db.client
+          .from('transactions')
+          .select('amount, user_id')
+          .eq('type', 'prize')
+          .in('pool_id', poolIds);
+
+        totalPrize = (prizes ?? []).reduce((sum: number, t: { amount: number }) => sum + Number(t.amount), 0);
+        totalWinners = new Set((prizes ?? []).map((t: { user_id: string }) => t.user_id)).size;
+      }
+
+      msg += `⚽ *${match.home_team} ${scoreStr} ${match.away_team}*\n`;
+      if (totalWinners > 0) {
+        const plural = totalWinners > 1 ? 's' : '';
+        msg += `🥇 ${totalWinners} premiado${plural} · *${fmtBrl(totalPrize)}* distribuídos\n\n`;
+      } else {
+        msg += `📋 Sem acertadores · palpites devolvidos\n\n`;
+      }
+    }
+
+    msg += `👉 [Ver seus resultados no bot](https://t.me/${botUsername})`;
+    await ctx.reply(msg, { parse_mode: 'Markdown' });
+  } catch (err) {
+    console.error('[groups /resultados]', err);
+  }
+}
+
 export async function handleGroupRanking(ctx: any, db: Db): Promise<void> {
   try {
     const { data } = await db.client

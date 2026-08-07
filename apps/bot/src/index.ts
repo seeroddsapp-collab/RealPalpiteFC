@@ -25,7 +25,7 @@ import { buildAlterarPixScene, ALTERAR_PIX_SCENE } from './scenes/alterar-pix.sc
 import { startClosePoolsCron } from './cron/close-pools.cron';
 import { startCheckResultsCron } from './cron/check-results.cron';
 import { startMatchSyncCron, syncMatches } from './services/sync-matches.service';
-import { handleGroupBoloes, handleGroupRanking } from './services/group-notifications.service';
+import { handleGroupBoloes, handleGroupRanking, handleGroupRegras, handleGroupResultados } from './services/group-notifications.service';
 import { MercadoPagoService } from './services/mercadopago.service';
 import { fmtBrl } from './formatters/messages';
 
@@ -113,12 +113,21 @@ bot.use(async (ctx, next) => {
   if (chatType !== 'group' && chatType !== 'supergroup') return next();
 
   const text: string = (ctx.message as any)?.text ?? '';
+  const botUser = (bot as any).botInfo?.username ?? '';
   if (text.startsWith('/boloes')) {
-    await handleGroupBoloes(ctx, db, (bot as any).botInfo?.username ?? '');
+    await handleGroupBoloes(ctx, db, botUser);
     return;
   }
   if (text.startsWith('/ranking')) {
     await handleGroupRanking(ctx, db);
+    return;
+  }
+  if (text.startsWith('/resultados')) {
+    await handleGroupResultados(ctx, db, botUser);
+    return;
+  }
+  if (text.startsWith('/regras')) {
+    await handleGroupRegras(ctx, botUser);
     return;
   }
   // Ignora outras mensagens de grupo
