@@ -96,30 +96,42 @@ export async function notifyGroupsResult(
   }
 }
 
-export async function handleGroupBoloes(ctx: any, db: Db): Promise<void> {
+export async function handleGroupBoloes(ctx: any, db: Db, botUsername: string): Promise<void> {
   try {
     const now = new Date().toISOString();
-    const next72h = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
+    const next48h = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
     const { data: matches } = await db.client
       .from('matches')
-      .select('home_team, away_team, kickoff_at')
+      .select('home_team, away_team, kickoff_at, championships(name)')
       .eq('status', 'scheduled')
       .gte('kickoff_at', now)
-      .lte('kickoff_at', next72h)
+      .lte('kickoff_at', next48h)
       .order('kickoff_at', { ascending: true })
-      .limit(5);
+      .limit(10);
 
     if (!matches || matches.length === 0) {
-      await ctx.reply('Nenhum bolão aberto nos próximos dias. Fique de olho!');
+      await ctx.reply('Nenhum bolão aberto para hoje ou amanhã. Fique de olho!');
       return;
     }
 
-    let msg = `⚽ *Próximos Bolões*\n\n`;
+    // Agrupa por campeonato
+    const byChamp = new Map<string, typeof matches>();
     for (const m of matches) {
-      msg += `*${m.home_team} x ${m.away_team}*\n🗓 ${fmtKickoff(m.kickoff_at)}\n\n`;
+      const champ = (m.championships as any)?.name ?? 'Campeonato';
+      if (!byChamp.has(champ)) byChamp.set(champ, []);
+      byChamp.get(champ)!.push(m);
     }
-    msg += `Acesse o bot para fazer seu palpite!`;
+
+    let msg = `⚽ *Bolões de Hoje e Amanhã*\n\n`;
+    for (const [champ, games] of byChamp) {
+      msg += `🏆 *${champ}*\n`;
+      for (const m of games) {
+        msg += `${m.home_team} x ${m.away_team} — ${fmtKickoff(m.kickoff_at)}\n`;
+      }
+      msg += `\n`;
+    }
+    msg += `👉 [Faça seu palpite agora!](https://t.me/${botUsername})`;
 
     await ctx.reply(msg, { parse_mode: 'Markdown' });
   } catch (err) {

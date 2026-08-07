@@ -114,7 +114,7 @@ bot.use(async (ctx, next) => {
 
   const text: string = (ctx.message as any)?.text ?? '';
   if (text.startsWith('/boloes')) {
-    await handleGroupBoloes(ctx, db);
+    await handleGroupBoloes(ctx, db, (bot as any).botInfo?.username ?? '');
     return;
   }
   if (text.startsWith('/ranking')) {
