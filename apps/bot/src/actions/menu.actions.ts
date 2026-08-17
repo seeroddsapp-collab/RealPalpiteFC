@@ -5,8 +5,9 @@ import {
   msgChampionships,
   msgNoChampionships,
   msgHowToPlay,
+  msgTodayMatches,
 } from '../formatters/messages';
-import { kbMainMenu, kbChampionships, kbBackToMenu } from '../keyboards/keyboards';
+import { kbMainMenu, kbChampionships, kbTodayMatches, kbBackToMenu } from '../keyboards/keyboards';
 
 function safeEdit(ctx: BotContext, text: string, extra: Record<string, unknown>) {
   return ctx.editMessageText(text, extra as never)
@@ -45,6 +46,39 @@ export function registerMenuActions(bot: { action: (...args: unknown[]) => void 
     await safeEdit(ctx, msgChampionships(), {
       parse_mode: 'Markdown',
       reply_markup: kbChampionships(championships).reply_markup,
+    });
+  });
+
+  // Jogos de Hoje — partidas do dia agrupadas por campeonato
+  (bot as any).action('gl_today', async (ctx: BotContext) => {
+    await ctx.answerCbQuery();
+
+    // Meia-noite e fim do dia no horário de Brasília (UTC-3)
+    const nowBR = new Date(Date.now() - 3 * 60 * 60 * 1000);
+    const todayBR = nowBR.toISOString().split('T')[0];
+    const startUTC = new Date(todayBR + 'T03:00:00.000Z');
+    const endUTC = new Date(startUTC.getTime() + 24 * 60 * 60 * 1000);
+
+    const { data: rows } = await db.client
+      .from('matches')
+      .select('*, championships(name)')
+      .eq('status', 'scheduled')
+      .gte('kickoff_at', startUTC.toISOString())
+      .lt('kickoff_at', endUTC.toISOString())
+      .order('kickoff_at', { ascending: true });
+
+    // Agrupa por campeonato preservando ordem cronológica
+    const groupMap = new Map<string, { champName: string; matches: any[] }>();
+    for (const m of rows ?? []) {
+      const champName = (m.championships as any)?.name ?? 'Outros';
+      if (!groupMap.has(champName)) groupMap.set(champName, { champName, matches: [] });
+      groupMap.get(champName)!.matches.push(m);
+    }
+    const groups = [...groupMap.values()] as Array<{ champName: string; matches: any[] }>;
+
+    await safeEdit(ctx, msgTodayMatches(groups), {
+      parse_mode: 'Markdown',
+      reply_markup: kbTodayMatches(groups).reply_markup,
     });
   });
 

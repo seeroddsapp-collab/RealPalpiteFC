@@ -63,8 +63,29 @@ export function kbPixKeyType() {
 }
 
 export function kbChampionships(championships: ChampionshipRow[]) {
-  const rows = championships.map(c => [Markup.button.callback(c.name, `gl_m:${c.id}`)]);
+  const rows: ReturnType<typeof Markup.button.callback>[][] = [
+    [Markup.button.callback('⚽ Jogos de Hoje', 'gl_today')],
+  ];
+  for (const c of championships) {
+    rows.push([Markup.button.callback(c.name, `gl_m:${c.id}`)]);
+  }
   rows.push([Markup.button.callback('🏠 Menu', 'menu')]);
+  return Markup.inlineKeyboard(rows);
+}
+
+export function kbTodayMatches(groups: Array<{ champName: string; matches: MatchRow[] }>) {
+  const rows: ReturnType<typeof Markup.button.callback>[][] = [];
+  for (const group of groups) {
+    for (const m of group.matches) {
+      const time = new Date(m.kickoff_at).toLocaleTimeString('pt-BR', {
+        hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
+      });
+      const abbrev = (n: string) => n.length > 11 ? n.slice(0, 10) + '.' : n;
+      const label = `⚽ ${abbrev(m.home_team)} × ${abbrev(m.away_team)} — ${time}`;
+      rows.push([Markup.button.callback(label, `gl_p:${m.id}`)]);
+    }
+  }
+  rows.push([Markup.button.callback('⬅️ Campeonatos', 'gl_ch')]);
   return Markup.inlineKeyboard(rows);
 }
 

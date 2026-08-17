@@ -157,6 +157,28 @@ export function msgNoMatches(): string {
   return '😕 Nenhuma partida disponivel nos proximos 21 dias.';
 }
 
+export function msgTodayMatches(groups: Array<{ champName: string; matches: MatchRow[] }>): string {
+  if (groups.length === 0) {
+    return (
+      `⚽ *Jogos de Hoje*\n\n` +
+      `Nenhum jogo agendado para hoje.\n` +
+      `Veja os campeonatos abaixo para jogos dos próximos dias.`
+    );
+  }
+  let msg = `⚽ *Jogos de Hoje*\n\n`;
+  for (const group of groups) {
+    msg += `🏆 *${group.champName}*\n`;
+    for (const m of group.matches) {
+      const time = new Date(m.kickoff_at).toLocaleTimeString('pt-BR', {
+        hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
+      });
+      msg += `${m.home_team} × ${m.away_team} — ${time}\n`;
+    }
+    msg += `\n`;
+  }
+  return msg.trimEnd() + `\n\nSelecione um jogo para apostar:`;
+}
+
 export function msgTierSelect(match: MatchRow): string {
   return (
     `⚽ *${match.home_team} × ${match.away_team}*\n` +
