@@ -1,14 +1,14 @@
 import { Scenes } from 'telegraf';
 import type { BotContext } from '../context';
 import type { Db } from '@realpalpitefc/database';
-import type { MercadoPagoService } from '../services/mercadopago.service';
+import type { AsaasService } from '../services/asaas.service';
 import { fmtBrl } from '../formatters/messages';
 
 export const DEPOSITAR_SCENE = 'depositar';
 const MIN_DEPOSIT = 10;
 const MAX_DEPOSIT = 5000;
 
-export function buildDepositarScene(db: Db, mp: MercadoPagoService) {
+export function buildDepositarScene(db: Db, asaas: AsaasService) {
   return new Scenes.WizardScene<BotContext>(
     DEPOSITAR_SCENE,
 
@@ -52,9 +52,13 @@ export function buildDepositarScene(db: Db, mp: MercadoPagoService) {
       try {
         const depositId = crypto.randomUUID();
 
-        const payment = await mp.createPixDeposit({
+        const customerName = user.username ? `@${user.username}` : `Apostador ${user.id.slice(0, 8)}`;
+
+        const payment = await asaas.createPixDeposit({
           amount,
           externalRef: depositId,
+          customerRef: `rpfc_${user.id}`,
+          customerName,
           description: 'Depósito RealPalpiteFC',
         });
 

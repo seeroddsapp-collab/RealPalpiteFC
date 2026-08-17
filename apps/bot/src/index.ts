@@ -26,7 +26,7 @@ import { startClosePoolsCron } from './cron/close-pools.cron';
 import { startCheckResultsCron } from './cron/check-results.cron';
 import { startMatchSyncCron, syncMatches } from './services/sync-matches.service';
 import { handleGroupBoloes, handleGroupRanking, handleGroupRegras, handleGroupResultados } from './services/group-notifications.service';
-import { MercadoPagoService } from './services/mercadopago.service';
+import { AsaasService } from './services/asaas.service';
 import { fmtBrl } from './formatters/messages';
 
 // ── Validação de variáveis de ambiente ────────────────────────────────────
@@ -35,15 +35,15 @@ const {
   SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY,
   FOOTBALL_DATA_API_KEY,
-  MP_ACCESS_TOKEN,
+  ASAAS_API_KEY,
 } = process.env;
 
 if (!TELEGRAM_BOT_TOKEN) throw new Error('TELEGRAM_BOT_TOKEN não definido no .env');
 if (!SUPABASE_URL) throw new Error('SUPABASE_URL não definido no .env');
 if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY não definido no .env');
 
-if (!MP_ACCESS_TOKEN) {
-  console.warn('[pix] MP_ACCESS_TOKEN não definido — comandos /depositar e /sacar estarão desabilitados');
+if (!ASAAS_API_KEY) {
+  console.warn('[pix] ASAAS_API_KEY não definido — comandos /depositar e /sacar estarão desabilitados');
 }
 
 // ── Inicialização das dependências ────────────────────────────────────────
@@ -54,15 +54,15 @@ const sportsData = new SportsDataService(
   new FootballDataAdapter(FOOTBALL_DATA_API_KEY ?? ''),
 );
 
-const mp = new MercadoPagoService(MP_ACCESS_TOKEN ?? '');
+const asaas = new AsaasService(ASAAS_API_KEY ?? '');
 
 // ── Bot ────────────────────────────────────────────────────────────────────
 const bot = new Telegraf<BotContext>(TELEGRAM_BOT_TOKEN);
 
 // Scenes
 const createPoolScene  = buildCreatePoolScene(db);
-const depositarScene   = buildDepositarScene(db, mp);
-const sacarScene       = buildSacarScene(db, mp);
+const depositarScene   = buildDepositarScene(db, asaas);
+const sacarScene       = buildSacarScene(db, asaas);
 const alterarPixScene  = buildAlterarPixScene(db);
 const stage = new Scenes.Stage<BotContext>([createPoolScene, depositarScene, sacarScene, alterarPixScene]);
 
@@ -197,7 +197,7 @@ registerMinhaContaActions(bot as never, db);
 });
 
 // Confirmação e cancelamento do fluxo de saque
-(bot as any).action('sacar_ok', (ctx: BotContext) => handleSacarOk(ctx, db, mp));
+(bot as any).action('sacar_ok', (ctx: BotContext) => handleSacarOk(ctx, db, asaas));
 (bot as any).action('sacar_cancel', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
   await ctx.editMessageText('Saque cancelado.');
@@ -210,7 +210,7 @@ bot.catch((err: unknown, ctx: BotContext) => {
   ctx.reply('⚠️ Ocorreu um erro inesperado. Tente novamente em instantes.').catch(() => {});
 });
 
-// ── Webhook PIX (Mercado Pago) ─────────────────────────────────────────────
+// ── Webhook PIX (Asaas) ───────────────────────────────────────────────────
 function parseJsonBody(req: http.IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
     let raw = '';
@@ -238,28 +238,24 @@ async function handlePixWebhook(
     }
 
     const body = (await parseJsonBody(req)) as {
-      type?: string;
-      data?: { id?: string };
+      event?: string;
+      payment?: { id?: string; status?: string; value?: number; externalReference?: string };
     };
 
-    // MP notifica pagamentos com type === "payment"
-    if (body.type !== 'payment' || !body.data?.id) {
+    // Asaas notifica com event PAYMENT_CONFIRMED ou PAYMENT_RECEIVED
+    const event = body.event ?? '';
+    if (
+      (event !== 'PAYMENT_CONFIRMED' && event !== 'PAYMENT_RECEIVED') ||
+      !body.payment?.id
+    ) {
       res.writeHead(200);
       res.end('OK');
       return;
     }
 
-    const mpPaymentId = body.data.id;
-    const payment = await mp.getPayment(mpPaymentId);
-
-    if (payment.status !== 'approved') {
-      res.writeHead(200);
-      res.end('OK');
-      return;
-    }
-
-    // Localiza o depósito pelo ID do pagamento MP
-    const deposit = await db.pixDeposits.findByMpPaymentId(mpPaymentId);
+    // Localiza o depósito pelo ID do pagamento Asaas (armazenado em mp_payment_id)
+    const asaasPaymentId = body.payment.id;
+    const deposit = await db.pixDeposits.findByMpPaymentId(asaasPaymentId);
     if (!deposit) {
       res.writeHead(200);
       res.end('OK');
@@ -361,7 +357,7 @@ async function main() {
       .listen(port);
 
     console.log(`🤖 @${me.username} iniciado (webhook) — ${webhookDomain}${webhookPath} porta ${port}`);
-    console.log(`💳 PIX webhook em ${webhookDomain}/pix/webhook`);
+    console.log(`💳 PIX webhook (Asaas) em ${webhookDomain}/pix/webhook?token=<WEBHOOK_SECRET>`);
   } else {
     await bot.launch();
     console.log(`🤖 @${me.username} iniciado (long-polling)`);

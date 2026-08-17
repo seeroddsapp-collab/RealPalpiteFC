@@ -1,7 +1,7 @@
 import { Scenes, Markup } from 'telegraf';
 import type { BotContext } from '../context';
 import type { Db } from '@realpalpitefc/database';
-import type { MercadoPagoService, PixKeyType } from '../services/mercadopago.service';
+import type { AsaasService, PixKeyType } from '../services/asaas.service';
 import { fmtBrl } from '../formatters/messages';
 import { kbMinhaConta } from '../keyboards/keyboards';
 
@@ -14,7 +14,7 @@ interface SacarSession extends Scenes.WizardSessionData {
   withdrawAmount?: number;
 }
 
-export function buildSacarScene(db: Db, mp: MercadoPagoService) {
+export function buildSacarScene(db: Db, asaas: AsaasService) {
   return new Scenes.WizardScene<BotContext>(
     SACAR_SCENE,
 
@@ -135,7 +135,7 @@ export function buildSacarScene(db: Db, mp: MercadoPagoService) {
 export async function handleSacarOk(
   ctx: BotContext,
   db: Db,
-  mp: MercadoPagoService,
+  asaas: AsaasService,
 ): Promise<void> {
   await ctx.answerCbQuery();
   const user = ctx.session.user;
@@ -203,9 +203,8 @@ export async function handleSacarOk(
       status: 'processing',
     });
 
-    // Executa a transferência no MP
     try {
-      const transfer = await mp.sendPix({
+      const transfer = await asaas.sendPix({
         amount,
         pixKey,
         pixKeyType,
@@ -225,7 +224,7 @@ export async function handleSacarOk(
           `Saldo restante: *${fmtBrl(newBalance)}*`,
         { parse_mode: 'Markdown' },
       );
-    } catch (mpErr) {
+    } catch (asaasErr) {
       // Estorna atomicamente em caso de falha na transferência
       const restoredBalance = await db.users.creditBalance(user.id, amount);
       await db.transactions.create({
@@ -236,10 +235,10 @@ export async function handleSacarOk(
         description: `Estorno de saque PIX com falha`,
       });
       await db.pixWithdrawals.updateStatus(withdrawal.id, 'failed', {
-        failureReason: String(mpErr),
+        failureReason: String(asaasErr),
       });
 
-      console.error('[sacar] MP transfer failed:', mpErr);
+      console.error('[sacar] Asaas transfer failed:', asaasErr);
       await ctx.editMessageText(
         `❌ *Falha ao processar saque.*\n\n` +
           `Seu saldo foi estornado. Tente novamente em instantes.`,
