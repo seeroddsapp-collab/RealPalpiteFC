@@ -5,7 +5,7 @@ import type { AsaasService } from '../services/asaas.service';
 import { fmtBrl } from '../formatters/messages';
 
 export const DEPOSITAR_SCENE = 'depositar';
-const MIN_DEPOSIT = 10;
+const MIN_DEPOSIT = 5;
 const MAX_DEPOSIT = 5000;
 
 export function buildDepositarScene(db: Db, asaas: AsaasService) {
