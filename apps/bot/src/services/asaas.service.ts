@@ -58,12 +58,21 @@ export class AsaasService {
 
   // Reutiliza o mesmo cliente Asaas por usuário (sem CPF obrigatório para PIX QR)
   private async findOrCreateCustomer(name: string, userRef: string): Promise<string> {
-    const search = await this.req<{ data: Array<{ id: string }> }>(
+    const search = await this.req<{ data: Array<{ id: string; cpfCnpj?: string }> }>(
       'GET',
       `/customers?externalReference=${encodeURIComponent(userRef)}`,
     );
 
-    if (search.data?.length > 0) return search.data[0].id;
+    if (search.data?.length > 0) {
+      const existing = search.data[0];
+      if (!existing.cpfCnpj && this.platformCpf) {
+        await this.req('PUT', `/customers/${existing.id}`, {
+          name,
+          cpfCnpj: this.platformCpf,
+        });
+      }
+      return existing.id;
+    }
 
     const created = await this.req<{ id: string }>('POST', '/customers', {
       name,
