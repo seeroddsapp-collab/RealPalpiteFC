@@ -91,7 +91,7 @@ export class AsaasService {
   }): Promise<AsaasPixPayment> {
     const customerId = await this.findOrCreateCustomer(opts.customerName, opts.customerRef);
 
-    const dueDate = new Date(Date.now() + 30 * 60 * 1000).toISOString().split('T')[0];
+    const dueDate = new Date(Date.now() + 7 * 60 * 1000).toISOString().split('T')[0];
 
     const payment = await this.req<{ id: string }>('POST', '/payments', {
       customer: customerId,
@@ -112,7 +112,7 @@ export class AsaasService {
       status: 'pending',
       qrCode: qr.payload,
       qrCodeBase64: qr.encodedImage,
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      expiresAt: new Date(Date.now() + 7 * 60 * 1000).toISOString(),
     };
   }
 

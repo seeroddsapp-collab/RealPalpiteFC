@@ -24,6 +24,7 @@ import { buildSacarScene, SACAR_SCENE, handleSacarOk } from './scenes/sacar.scen
 import { buildAlterarPixScene, ALTERAR_PIX_SCENE } from './scenes/alterar-pix.scene';
 import { startClosePoolsCron } from './cron/close-pools.cron';
 import { startCheckResultsCron } from './cron/check-results.cron';
+import { startDepositExpiryCron } from './cron/check-deposits.cron';
 import { startMatchSyncCron, syncMatches } from './services/sync-matches.service';
 import { handleGroupBoloes, handleGroupRanking, handleGroupRegras, handleGroupResultados } from './services/group-notifications.service';
 import { AsaasService } from './services/asaas.service';
@@ -314,6 +315,7 @@ async function main() {
   startMatchSyncCron(db, sportsData, bot, botUsername);
   startClosePoolsCron(db, bot);
   startCheckResultsCron(db, sportsData, bot, botUsername);
+  startDepositExpiryCron(db, bot);
 
   const webhookDomain = process.env.RENDER_EXTERNAL_URL;
 

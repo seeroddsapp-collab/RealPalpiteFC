@@ -17,7 +17,7 @@ export function buildDepositarScene(db: Db, asaas: AsaasService) {
       await ctx.reply(
         `💳 *Depósito via PIX*\n\n` +
           `Qual valor deseja depositar?\n` +
-          `_Mínimo: ${fmtBrl(MIN_DEPOSIT)} · QR Code expira em 30 min_`,
+          `_Mínimo: ${fmtBrl(MIN_DEPOSIT)} · QR Code expira em 7 min_`,
         { parse_mode: 'Markdown' },
       );
       return ctx.wizard.next();
@@ -77,7 +77,7 @@ export function buildDepositarScene(db: Db, asaas: AsaasService) {
         await ctx.reply(
           `✅ *Depósito de ${fmtBrl(amount)}*\n\n` +
           `Copie o código PIX abaixo e cole no seu banco em *PIX → Copia e Cola*:\n` +
-          `_Expira em 30 minutos. O saldo é creditado automaticamente após o pagamento._`,
+          `_Expira em 7 minutos. O saldo é creditado automaticamente após o pagamento._`,
           { parse_mode: 'Markdown' },
         );
         await ctx.reply(`\`${payment.qrCode}\``, { parse_mode: 'Markdown' });
