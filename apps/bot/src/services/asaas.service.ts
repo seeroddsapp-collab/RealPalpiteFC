@@ -33,7 +33,10 @@ const PIX_KEY_TYPE: Record<PixKeyType, string> = {
 };
 
 export class AsaasService {
-  constructor(private readonly apiKey: string) {}
+  constructor(
+    private readonly apiKey: string,
+    private readonly platformCpf?: string,
+  ) {}
 
   private async req<T>(method: string, path: string, body?: unknown): Promise<T> {
     const res = await fetch(`${ASAAS_API}${path}`, {
@@ -65,6 +68,7 @@ export class AsaasService {
     const created = await this.req<{ id: string }>('POST', '/customers', {
       name,
       externalReference: userRef,
+      ...(this.platformCpf ? { cpfCnpj: this.platformCpf } : {}),
     });
     return created.id;
   }

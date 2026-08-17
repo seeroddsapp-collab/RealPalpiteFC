@@ -36,6 +36,7 @@ const {
   SUPABASE_SERVICE_ROLE_KEY,
   FOOTBALL_DATA_API_KEY,
   ASAAS_API_KEY,
+  ASAAS_PLATFORM_CPF,
 } = process.env;
 
 if (!TELEGRAM_BOT_TOKEN) throw new Error('TELEGRAM_BOT_TOKEN não definido no .env');
@@ -54,7 +55,7 @@ const sportsData = new SportsDataService(
   new FootballDataAdapter(FOOTBALL_DATA_API_KEY ?? ''),
 );
 
-const asaas = new AsaasService(ASAAS_API_KEY ?? '');
+const asaas = new AsaasService(ASAAS_API_KEY ?? '', ASAAS_PLATFORM_CPF);
 
 // ── Bot ────────────────────────────────────────────────────────────────────
 const bot = new Telegraf<BotContext>(TELEGRAM_BOT_TOKEN);
