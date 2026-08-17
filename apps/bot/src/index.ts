@@ -228,10 +228,10 @@ async function handlePixWebhook(
   res: http.ServerResponse,
 ): Promise<void> {
   try {
-    // C-1: Valida token de segurança na URL (?token=WEBHOOK_SECRET)
+    // Valida token enviado pelo Asaas no header asaas-access-token
     const webhookSecret = process.env.WEBHOOK_SECRET;
-    const url = new URL(req.url ?? '/', 'http://localhost');
-    if (!webhookSecret || url.searchParams.get('token') !== webhookSecret) {
+    const receivedToken = req.headers['asaas-access-token'];
+    if (!webhookSecret || receivedToken !== webhookSecret) {
       res.writeHead(401);
       res.end('Unauthorized');
       return;
