@@ -6,12 +6,21 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { NovaApostaForm } from '@/components/apostas/nova-aposta-form'
 import { FinalizarBtn } from '@/components/apostas/finalizar-btn'
 
+const PAGE_SIZE = 8
+
+type SearchParams = { status?: string; period?: string; page?: string }
+
+type Bet = {
+  id: string; bet_date: string; amount: number; odd: number
+  category: string; status: string; payout: number | null; notes: string | null
+}
+type Movement = { id: string; type: string; amount: number; created_at: string; notes: string | null }
+
 function fmtArs(n: number) {
   const abs = Math.abs(n)
   const s = abs.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   return `${n < 0 ? '-' : ''}$ ${s}`
 }
-
 function fmtDate(d: string) {
   return new Date(d + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
 }
@@ -32,22 +41,18 @@ function ProfitChart({ points }: { points: Array<{ cumulative: number }> }) {
   if (points.length < 2) return (
     <p className="text-xs text-slate-500 text-center py-6">Finalize mais apostas para ver o gráfico.</p>
   )
-
   const vals = points.map(p => p.cumulative)
   const min = Math.min(0, ...vals)
   const max = Math.max(0, ...vals)
   const range = max - min || 1
   const W = 500; const H = 100; const PAD = 4
-
   const px = (i: number) => PAD + (i / (points.length - 1)) * (W - PAD * 2)
   const py = (v: number) => H - PAD - ((v - min) / range) * (H - PAD * 2)
   const zY = py(0)
-
   const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${px(i).toFixed(1)} ${py(p.cumulative).toFixed(1)}`).join(' ')
   const fill = `M ${px(0).toFixed(1)} ${zY.toFixed(1)} ` + points.map((p, i) => `L ${px(i).toFixed(1)} ${py(p.cumulative).toFixed(1)}`).join(' ') + ` L ${px(points.length - 1).toFixed(1)} ${zY.toFixed(1)} Z`
   const last = vals[vals.length - 1]
   const pos = last >= 0
-
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-24" preserveAspectRatio="none">
       <line x1={PAD} y1={zY} x2={W - PAD} y2={zY} stroke="#475569" strokeWidth="0.8" strokeDasharray="4 3" />
@@ -58,25 +63,47 @@ function ProfitChart({ points }: { points: Array<{ cumulative: number }> }) {
   )
 }
 
-type Bet = {
-  id: string; bet_date: string; amount: number; odd: number
-  category: string; status: string; payout: number | null; notes: string | null
+const STATUS_LABEL: Record<string, string> = { pending: 'Pendente', won: 'Ganhou', lost: 'Perdeu', void: 'Nula' }
+const STATUS_CSS: Record<string, string> = {
+  pending: 'border-amber-500/20',
+  won:     'border-emerald-500/20',
+  lost:    'border-rose-500/20',
+  void:    'border-stone-200 dark:border-navy-700',
 }
-type Movement = { id: string; type: string; amount: number; created_at: string; notes: string | null }
+const STATUS_BADGE: Record<string, string> = {
+  pending: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  won:     'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  lost:    'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  void:    'bg-slate-500/10 text-slate-400 border-slate-500/20',
+}
 
-export default async function ApostasPage() {
+function periodCutoff(p: string): string | null {
+  const now = new Date()
+  if (p === 'hoje') return now.toISOString().slice(0, 10)
+  if (p === 'semana') { const d = new Date(now); d.setDate(d.getDate() - 7); return d.toISOString().slice(0, 10) }
+  if (p === 'mes') { const d = new Date(now); d.setDate(d.getDate() - 30); return d.toISOString().slice(0, 10) }
+  if (p === 'ano') { const d = new Date(now); d.setFullYear(d.getFullYear() - 1); return d.toISOString().slice(0, 10) }
+  return null
+}
+
+export default async function ApostasPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const db = createAdminClient()
+  const sp = await searchParams
+  const statusFilter = sp.status ?? 'all'
+  const periodFilter = sp.period ?? 'tudo'
+  const page = Math.max(1, Number(sp.page ?? 1))
+
   const [{ data: bets }, { data: bankroll }] = await Promise.all([
-    db.from('personal_bets').select('*').order('bet_date').order('created_at') as any,
-    db.from('personal_bankroll').select('*').order('created_at', { ascending: false }) as any,
+    (db as any).from('personal_bets').select('*').order('bet_date', { ascending: false }).order('created_at', { ascending: false }),
+    (db as any).from('personal_bankroll').select('*').order('created_at', { ascending: false }),
   ])
 
   const allBets: Bet[] = bets ?? []
   const allMovements: Movement[] = bankroll ?? []
 
+  // KPIs — sempre sobre todas as apostas finalizadas
   const settled = allBets.filter(b => b.status !== 'pending')
-  const pending = allBets.filter(b => b.status === 'pending')
-  const won = settled.filter(b => b.status === 'won')
+  const won  = settled.filter(b => b.status === 'won')
   const lost = settled.filter(b => b.status === 'lost')
 
   const netProfit = settled.reduce((acc, b) => {
@@ -84,7 +111,6 @@ export default async function ApostasPage() {
     if (b.status === 'lost') return acc - b.amount
     return acc
   }, 0)
-
   const totalWagered = [...won, ...lost].reduce((s, b) => s + b.amount, 0)
   const roi = totalWagered > 0 ? (netProfit / totalWagered) * 100 : 0
   const winRate = won.length + lost.length > 0 ? (won.length / (won.length + lost.length)) * 100 : 0
@@ -93,28 +119,45 @@ export default async function ApostasPage() {
   const totalWit = allMovements.filter(m => m.type === 'withdrawal').reduce((s, m) => s + m.amount, 0)
   const saldoBanca = totalDep - totalWit + netProfit
 
-  // Gráfico: lucro acumulado a cada aposta finalizada (excl void)
+  // Gráfico
   let cumulative = 0
-  const chartPoints = settled
-    .filter(b => b.status !== 'void')
+  const chartPoints = [...allBets].reverse()
+    .filter(b => b.status === 'won' || b.status === 'lost')
     .map(b => {
       cumulative += b.status === 'won' ? (b.payout ?? 0) - b.amount : -b.amount
       return { cumulative }
     })
 
-  // Breakdown por categoria
-  const catMap = new Map<string, { total: number; won: number; profit: number; wagered: number }>()
-  for (const b of settled) {
-    if (b.status === 'void') continue
-    const s = catMap.get(b.category) ?? { total: 0, won: 0, profit: 0, wagered: 0 }
-    s.total++; s.wagered += b.amount
+  // Lista filtrada + paginada
+  const cutoff = periodCutoff(periodFilter)
+  let filtered = allBets
+  if (statusFilter !== 'all') filtered = filtered.filter(b => b.status === statusFilter)
+  if (cutoff) filtered = filtered.filter(b => b.bet_date >= cutoff!)
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  // Breakdown por categoria (all-time)
+  const catMap = new Map<string, { total: number; won: number; profit: number }>()
+  for (const b of settled.filter(b => b.status !== 'void')) {
+    const s = catMap.get(b.category) ?? { total: 0, won: 0, profit: 0 }
+    s.total++
     if (b.status === 'won') { s.won++; s.profit += (b.payout ?? 0) - b.amount }
-    else { s.profit -= b.amount }
+    else s.profit -= b.amount
     catMap.set(b.category, s)
   }
   const catList = [...catMap.entries()]
     .map(([cat, s]) => ({ cat, ...s }))
     .sort((a, b) => b.profit - a.profit)
+
+  function url(params: Partial<{ status: string; period: string; page: number }>) {
+    const s = params.status ?? statusFilter
+    const p = params.period ?? periodFilter
+    const pg = params.page ?? 1
+    return `/dashboard/apostas?status=${s}&period=${p}&page=${pg}`
+  }
+
+  const pendingCount = allBets.filter(b => b.status === 'pending').length
 
   return (
     <div className="space-y-6">
@@ -167,50 +210,108 @@ export default async function ApostasPage() {
       {/* Gráfico */}
       {chartPoints.length >= 2 && (
         <div className="bg-white dark:bg-navy-800 rounded-2xl border border-stone-200 dark:border-navy-700 p-5">
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
-            Lucro Acumulado
-          </p>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Lucro Acumulado</p>
           <ProfitChart points={chartPoints} />
           <div className="flex justify-between text-xs text-slate-500 mt-1">
             <span>1ª aposta</span>
-            <span className={netProfit >= 0 ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
-              {fmtArs(netProfit)}
-            </span>
+            <span className={netProfit >= 0 ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>{fmtArs(netProfit)}</span>
           </div>
         </div>
       )}
 
-      {/* Apostas Pendentes */}
-      <div>
-        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
-          Apostas Pendentes {pending.length > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px]">{pending.length}</span>}
-        </p>
+      {/* Lista com filtros */}
+      <div className="space-y-3">
+        {/* Título + contagem */}
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+            Apostas
+            {filtered.length > 0 && (
+              <span className="ml-2 px-1.5 py-0.5 rounded-full bg-navy-700 text-slate-400 text-[10px] normal-case font-normal">
+                {filtered.length}
+              </span>
+            )}
+            {pendingCount > 0 && statusFilter !== 'pending' && (
+              <a href={url({ status: 'pending', page: 1 })}
+                className="ml-2 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[10px] normal-case font-semibold border border-amber-500/20 hover:bg-amber-500/25 transition-colors"
+              >
+                {pendingCount} pendente{pendingCount !== 1 ? 's' : ''}
+              </a>
+            )}
+          </p>
+        </div>
 
-        {pending.length === 0 ? (
-          <div className="text-center py-8 text-slate-400 text-sm bg-white dark:bg-navy-800 rounded-2xl border border-stone-200 dark:border-navy-700">
-            Nenhuma aposta pendente. Use o botão <strong>+ Nova Aposta</strong> para registrar.
+        {/* Filtro de status */}
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          {(['all', 'pending', 'won', 'lost', 'void'] as const).map(s => {
+            const count = s === 'all' ? allBets.length : allBets.filter(b => b.status === s).length
+            const active = statusFilter === s
+            return (
+              <a key={s} href={url({ status: s, page: 1 })}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition-colors shrink-0 ${
+                  active
+                    ? s === 'won'     ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
+                    : s === 'lost'    ? 'bg-rose-500/20 border-rose-500/40 text-rose-400'
+                    : s === 'pending' ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
+                    : s === 'void'    ? 'bg-slate-500/20 border-slate-500/40 text-slate-400'
+                    :                  'bg-gold-500/20 border-gold-500/40 text-gold-400'
+                    : 'border-stone-200 dark:border-navy-700 text-slate-400 hover:text-slate-200 dark:hover:text-slate-300'
+                }`}
+              >
+                {s === 'all' ? 'Todas' : STATUS_LABEL[s]}
+                <span className="opacity-60 text-[10px]">{count}</span>
+              </a>
+            )
+          })}
+        </div>
+
+        {/* Filtro de período */}
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          {(['tudo', 'ano', 'mes', 'semana', 'hoje'] as const).map(p => {
+            const labels: Record<string, string> = { tudo: 'Tudo', ano: '12 meses', mes: '30 dias', semana: '7 dias', hoje: 'Hoje' }
+            return (
+              <a key={p} href={url({ period: p, page: 1 })}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition-colors shrink-0 ${
+                  periodFilter === p
+                    ? 'bg-navy-700 border-navy-600 text-slate-200'
+                    : 'border-stone-200 dark:border-navy-700 text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                {labels[p]}
+              </a>
+            )
+          })}
+        </div>
+
+        {/* Cards */}
+        {paginated.length === 0 ? (
+          <div className="text-center py-10 text-slate-400 text-sm bg-white dark:bg-navy-800 rounded-2xl border border-stone-200 dark:border-navy-700">
+            {allBets.length === 0
+              ? 'Nenhuma aposta registrada ainda. Use + Nova Aposta para começar.'
+              : 'Nenhuma aposta neste filtro.'}
           </div>
         ) : (
           <div className="space-y-3">
-            {pending.map(b => {
-              const potReturn = b.amount * b.odd
-              const potProfit = potReturn - b.amount
+            {paginated.map(b => {
+              const profit = b.status === 'won'
+                ? (b.payout ?? 0) - b.amount
+                : b.status === 'lost' ? -b.amount : null
+
               return (
-                <div key={b.id} className="bg-white dark:bg-navy-800 rounded-2xl border border-amber-500/20 p-4 space-y-3">
+                <div key={b.id} className={`bg-white dark:bg-navy-800 rounded-2xl border p-4 space-y-3 ${STATUS_CSS[b.status] ?? 'border-stone-200 dark:border-navy-700'}`}>
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{fmtDate(b.bet_date)}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-navy-700 text-slate-400 border border-navy-600">{b.category}</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{fmtDate(b.bet_date)}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-navy-700 text-slate-300 border border-navy-600">{b.category}</span>
                       </div>
-                      {b.notes && <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">{b.notes}</p>}
+                      {b.notes && <p className="text-xs text-slate-500 mt-0.5 truncate">{b.notes}</p>}
                     </div>
-                    <span className="text-xs px-2 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 whitespace-nowrap font-semibold">
-                      Em aberto
+                    <span className={`text-xs px-2 py-1 rounded-full border font-semibold whitespace-nowrap shrink-0 ${STATUS_BADGE[b.status] ?? ''}`}>
+                      {STATUS_LABEL[b.status] ?? b.status}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className={`grid gap-2 text-center ${profit !== null ? 'grid-cols-4' : 'grid-cols-3'}`}>
                     <div className="bg-stone-50 dark:bg-navy-900/50 rounded-xl p-2">
                       <p className="text-[10px] text-slate-500 uppercase tracking-wide">Apostado</p>
                       <p className="text-sm font-bold font-mono text-slate-700 dark:text-slate-200 mt-0.5">{fmtArs(b.amount)}</p>
@@ -220,15 +321,74 @@ export default async function ApostasPage() {
                       <p className="text-sm font-bold font-mono text-gold-400 mt-0.5">{b.odd.toFixed(2)}</p>
                     </div>
                     <div className="bg-stone-50 dark:bg-navy-900/50 rounded-xl p-2">
-                      <p className="text-[10px] text-slate-500 uppercase tracking-wide">Lucro pot.</p>
-                      <p className="text-sm font-bold font-mono text-emerald-400 mt-0.5">{fmtArs(potProfit)}</p>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wide">
+                        {b.status === 'won' ? 'Retorno' : 'Pot.'}
+                      </p>
+                      <p className={`text-sm font-bold font-mono mt-0.5 ${b.status === 'won' ? 'text-emerald-400' : 'text-slate-400'}`}>
+                        {fmtArs(b.status === 'won' && b.payout ? b.payout : b.amount * b.odd)}
+                      </p>
                     </div>
+                    {profit !== null && (
+                      <div className="bg-stone-50 dark:bg-navy-900/50 rounded-xl p-2">
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wide">Lucro real</p>
+                        <p className={`text-sm font-bold font-mono mt-0.5 ${profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {profit >= 0 ? '+' : ''}{fmtArs(profit)}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
-                  <FinalizarBtn id={b.id} amount={b.amount} odd={b.odd} />
+                  {b.status === 'pending' && (
+                    <FinalizarBtn id={b.id} amount={b.amount} odd={b.odd} />
+                  )}
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {/* Paginação */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 pt-2">
+            {page > 1 && (
+              <a href={url({ page: page - 1 })}
+                className="px-4 py-2 rounded-xl text-sm border border-stone-200 dark:border-navy-700 text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                ← Anterior
+              </a>
+            )}
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                let pg: number
+                if (totalPages <= 7) {
+                  pg = i + 1
+                } else if (page <= 4) {
+                  pg = i + 1
+                } else if (page >= totalPages - 3) {
+                  pg = totalPages - 6 + i
+                } else {
+                  pg = page - 3 + i
+                }
+                return (
+                  <a key={pg} href={url({ page: pg })}
+                    className={`w-9 h-9 flex items-center justify-center rounded-xl text-sm font-medium transition-colors ${
+                      pg === page
+                        ? 'bg-gold-500 text-white'
+                        : 'text-slate-400 hover:text-slate-200 border border-stone-200 dark:border-navy-700'
+                    }`}
+                  >
+                    {pg}
+                  </a>
+                )
+              })}
+            </div>
+            {page < totalPages && (
+              <a href={url({ page: page + 1 })}
+                className="px-4 py-2 rounded-xl text-sm border border-stone-200 dark:border-navy-700 text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                Próxima →
+              </a>
+            )}
           </div>
         )}
       </div>
@@ -244,11 +404,9 @@ export default async function ApostasPage() {
                   <p className="text-sm text-slate-700 dark:text-slate-300 truncate">{c.cat}</p>
                   <p className="text-xs text-slate-400">{c.total} aposta{c.total !== 1 ? 's' : ''} · {c.total > 0 ? Math.round(c.won / c.total * 100) : 0}% acertos</p>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className={`text-sm font-bold font-mono ${c.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {c.profit >= 0 ? '+' : ''}{fmtArs(c.profit)}
-                  </p>
-                </div>
+                <p className={`text-sm font-bold font-mono shrink-0 ${c.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {c.profit >= 0 ? '+' : ''}{fmtArs(c.profit)}
+                </p>
               </div>
             ))}
           </div>
