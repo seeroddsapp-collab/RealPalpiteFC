@@ -81,7 +81,7 @@ function periodCutoff(p: string): string | null {
   const now = new Date()
   if (p === 'hoje') return now.toISOString().slice(0, 10)
   if (p === 'semana') { const d = new Date(now); d.setDate(d.getDate() - 7); return d.toISOString().slice(0, 10) }
-  if (p === 'mes') { const d = new Date(now); d.setDate(d.getDate() - 30); return d.toISOString().slice(0, 10) }
+  if (p === 'mes') return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
   if (p === 'ano') { const d = new Date(now); d.setFullYear(d.getFullYear() - 1); return d.toISOString().slice(0, 10) }
   return null
 }
@@ -101,8 +101,12 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
   const allBets: Bet[] = bets ?? []
   const allMovements: Movement[] = bankroll ?? []
 
-  // KPIs — sempre sobre todas as apostas finalizadas
-  const settled = allBets.filter(b => b.status !== 'pending')
+  // Aplica filtro de período — afeta KPIs e lista
+  const cutoff = periodCutoff(periodFilter)
+  const periodBets = cutoff ? allBets.filter(b => b.bet_date >= cutoff!) : allBets
+
+  // KPIs — baseados no período selecionado
+  const settled = periodBets.filter(b => b.status !== 'pending')
   const won  = settled.filter(b => b.status === 'won')
   const lost = settled.filter(b => b.status === 'lost')
 
@@ -115,11 +119,17 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
   const roi = totalWagered > 0 ? (netProfit / totalWagered) * 100 : 0
   const winRate = won.length + lost.length > 0 ? (won.length / (won.length + lost.length)) * 100 : 0
 
+  // Saldo da banca sempre all-time (depósitos e retiradas não têm filtro de período)
   const totalDep = allMovements.filter(m => m.type === 'deposit').reduce((s, m) => s + m.amount, 0)
   const totalWit = allMovements.filter(m => m.type === 'withdrawal').reduce((s, m) => s + m.amount, 0)
-  const saldoBanca = totalDep - totalWit + netProfit
+  const allTimeProfit = allBets.filter(b => b.status !== 'pending').reduce((acc, b) => {
+    if (b.status === 'won') return acc + (b.payout ?? 0) - b.amount
+    if (b.status === 'lost') return acc - b.amount
+    return acc
+  }, 0)
+  const saldoBanca = totalDep - totalWit + allTimeProfit
 
-  // Gráfico
+  // Gráfico — sempre all-time (mostra evolução completa)
   let cumulative = 0
   const chartPoints = [...allBets].reverse()
     .filter(b => b.status === 'won' || b.status === 'lost')
@@ -128,11 +138,10 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
       return { cumulative }
     })
 
-  // Lista filtrada + paginada
-  const cutoff = periodCutoff(periodFilter)
-  let filtered = allBets
+  // Lista: período já aplicado, aplica filtro de status por cima
+
+  let filtered = periodBets
   if (statusFilter !== 'all') filtered = filtered.filter(b => b.status === statusFilter)
-  if (cutoff) filtered = filtered.filter(b => b.bet_date >= cutoff!)
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -267,7 +276,7 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
         {/* Filtro de período */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
           {(['tudo', 'ano', 'mes', 'semana', 'hoje'] as const).map(p => {
-            const labels: Record<string, string> = { tudo: 'Tudo', ano: '12 meses', mes: '30 dias', semana: '7 dias', hoje: 'Hoje' }
+            const labels: Record<string, string> = { tudo: 'Tudo', ano: '12 meses', mes: 'Mês atual', semana: '7 dias', hoje: 'Hoje' }
             return (
               <a key={p} href={url({ period: p, page: 1 })}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition-colors shrink-0 ${
