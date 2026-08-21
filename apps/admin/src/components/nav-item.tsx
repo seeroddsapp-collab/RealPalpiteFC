@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Layers, Users, Trophy, CalendarDays, FileText, ShieldCheck, Wallet, Settings, type LucideIcon } from 'lucide-react'
+import { LayoutDashboard, Layers, Users, Trophy, CalendarDays, FileText, ShieldCheck, Wallet, Settings, TrendingUp, type LucideIcon } from 'lucide-react'
 
 const NAV: { href: string; label: string; Icon: LucideIcon; exact?: boolean }[] = [
   { href: '/dashboard',                  label: 'Dashboard',     Icon: LayoutDashboard, exact: true },
@@ -11,6 +11,7 @@ const NAV: { href: string; label: string; Icon: LucideIcon; exact?: boolean }[] 
   { href: '/dashboard/usuarios',         label: 'Usuários',      Icon: Users },
   { href: '/dashboard/campeonatos',      label: 'Campeonatos',   Icon: Trophy },
   { href: '/dashboard/financeiro',       label: 'Financeiro',    Icon: Wallet },
+  { href: '/dashboard/apostas',          label: 'Apostas',       Icon: TrendingUp },
   { href: '/dashboard/audit',            label: 'Audit Log',     Icon: ShieldCheck },
   { href: '/dashboard/configuracoes',    label: 'Configurações', Icon: Settings },
 ]

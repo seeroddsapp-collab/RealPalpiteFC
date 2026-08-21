@@ -1,0 +1,258 @@
+export const dynamic = 'force-dynamic'
+
+import Link from 'next/link'
+import { createAdminClient } from '@/lib/supabase-admin'
+import { NovaApostaForm } from '@/components/apostas/nova-aposta-form'
+import { FinalizarBtn } from '@/components/apostas/finalizar-btn'
+
+function fmtArs(n: number) {
+  const abs = Math.abs(n)
+  const s = abs.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return `${n < 0 ? '-' : ''}$ ${s}`
+}
+
+function fmtDate(d: string) {
+  return new Date(d + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
+}
+
+function KpiCard({ label, value, sub, color = 'text-slate-200', border = '' }: {
+  label: string; value: string; sub?: string; color?: string; border?: string
+}) {
+  return (
+    <div className={`bg-white dark:bg-navy-800 rounded-2xl p-4 border ${border || 'border-stone-200 dark:border-navy-700'}`}>
+      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</p>
+      <p className={`text-2xl font-bold font-mono mt-1 ${color}`}>{value}</p>
+      {sub && <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{sub}</p>}
+    </div>
+  )
+}
+
+function ProfitChart({ points }: { points: Array<{ cumulative: number }> }) {
+  if (points.length < 2) return (
+    <p className="text-xs text-slate-500 text-center py-6">Finalize mais apostas para ver o gráfico.</p>
+  )
+
+  const vals = points.map(p => p.cumulative)
+  const min = Math.min(0, ...vals)
+  const max = Math.max(0, ...vals)
+  const range = max - min || 1
+  const W = 500; const H = 100; const PAD = 4
+
+  const px = (i: number) => PAD + (i / (points.length - 1)) * (W - PAD * 2)
+  const py = (v: number) => H - PAD - ((v - min) / range) * (H - PAD * 2)
+  const zY = py(0)
+
+  const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${px(i).toFixed(1)} ${py(p.cumulative).toFixed(1)}`).join(' ')
+  const fill = `M ${px(0).toFixed(1)} ${zY.toFixed(1)} ` + points.map((p, i) => `L ${px(i).toFixed(1)} ${py(p.cumulative).toFixed(1)}`).join(' ') + ` L ${px(points.length - 1).toFixed(1)} ${zY.toFixed(1)} Z`
+  const last = vals[vals.length - 1]
+  const pos = last >= 0
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-24" preserveAspectRatio="none">
+      <line x1={PAD} y1={zY} x2={W - PAD} y2={zY} stroke="#475569" strokeWidth="0.8" strokeDasharray="4 3" />
+      <path d={fill} fill={pos ? 'rgb(52 211 153 / 0.12)' : 'rgb(251 113 133 / 0.12)'} />
+      <path d={line} fill="none" stroke={pos ? '#34d399' : '#fb7185'} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={px(points.length - 1)} cy={py(last)} r="3" fill={pos ? '#34d399' : '#fb7185'} />
+    </svg>
+  )
+}
+
+type Bet = {
+  id: string; bet_date: string; amount: number; odd: number
+  category: string; status: string; payout: number | null; notes: string | null
+}
+type Movement = { id: string; type: string; amount: number; created_at: string; notes: string | null }
+
+export default async function ApostasPage() {
+  const db = createAdminClient()
+  const [{ data: bets }, { data: bankroll }] = await Promise.all([
+    db.from('personal_bets').select('*').order('bet_date').order('created_at') as any,
+    db.from('personal_bankroll').select('*').order('created_at', { ascending: false }) as any,
+  ])
+
+  const allBets: Bet[] = bets ?? []
+  const allMovements: Movement[] = bankroll ?? []
+
+  const settled = allBets.filter(b => b.status !== 'pending')
+  const pending = allBets.filter(b => b.status === 'pending')
+  const won = settled.filter(b => b.status === 'won')
+  const lost = settled.filter(b => b.status === 'lost')
+
+  const netProfit = settled.reduce((acc, b) => {
+    if (b.status === 'won') return acc + (b.payout ?? 0) - b.amount
+    if (b.status === 'lost') return acc - b.amount
+    return acc
+  }, 0)
+
+  const totalWagered = [...won, ...lost].reduce((s, b) => s + b.amount, 0)
+  const roi = totalWagered > 0 ? (netProfit / totalWagered) * 100 : 0
+  const winRate = won.length + lost.length > 0 ? (won.length / (won.length + lost.length)) * 100 : 0
+
+  const totalDep = allMovements.filter(m => m.type === 'deposit').reduce((s, m) => s + m.amount, 0)
+  const totalWit = allMovements.filter(m => m.type === 'withdrawal').reduce((s, m) => s + m.amount, 0)
+  const saldoBanca = totalDep - totalWit + netProfit
+
+  // Gráfico: lucro acumulado a cada aposta finalizada (excl void)
+  let cumulative = 0
+  const chartPoints = settled
+    .filter(b => b.status !== 'void')
+    .map(b => {
+      cumulative += b.status === 'won' ? (b.payout ?? 0) - b.amount : -b.amount
+      return { cumulative }
+    })
+
+  // Breakdown por categoria
+  const catMap = new Map<string, { total: number; won: number; profit: number; wagered: number }>()
+  for (const b of settled) {
+    if (b.status === 'void') continue
+    const s = catMap.get(b.category) ?? { total: 0, won: 0, profit: 0, wagered: 0 }
+    s.total++; s.wagered += b.amount
+    if (b.status === 'won') { s.won++; s.profit += (b.payout ?? 0) - b.amount }
+    else { s.profit -= b.amount }
+    catMap.set(b.category, s)
+  }
+  const catList = [...catMap.entries()]
+    .map(([cat, s]) => ({ cat, ...s }))
+    .sort((a, b) => b.profit - a.profit)
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold text-gold-400">Minhas Apostas</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Controle pessoal · 1xbet · Pesos Argentinos</p>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <Link href="/dashboard/apostas/historico" className="px-4 py-2 rounded-xl text-sm font-medium border border-stone-200 dark:border-navy-700 text-slate-500 dark:text-slate-400 hover:text-gold-500 transition-colors">
+            Histórico
+          </Link>
+          <Link href="/dashboard/apostas/banca" className="px-4 py-2 rounded-xl text-sm font-medium border border-stone-200 dark:border-navy-700 text-slate-500 dark:text-slate-400 hover:text-gold-500 transition-colors">
+            Banca
+          </Link>
+          <NovaApostaForm />
+        </div>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <KpiCard
+          label="Ganho Líquido Real"
+          value={fmtArs(netProfit)}
+          sub={`${settled.filter(b => b.status !== 'void').length} apostas finalizadas`}
+          color={netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}
+          border={netProfit >= 0 ? 'border-emerald-500/30' : 'border-rose-500/30'}
+        />
+        <KpiCard
+          label="ROI"
+          value={`${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%`}
+          sub={`sobre ${fmtArs(totalWagered)} apostados`}
+          color={roi >= 0 ? 'text-emerald-400' : 'text-rose-400'}
+        />
+        <KpiCard
+          label="Taxa de Acertos"
+          value={`${winRate.toFixed(0)}%`}
+          sub={`${won.length}G · ${lost.length}P · ${settled.filter(b => b.status === 'void').length}N`}
+          color={winRate >= 50 ? 'text-gold-400' : 'text-slate-300'}
+        />
+        <KpiCard
+          label="Saldo na Banca"
+          value={fmtArs(saldoBanca)}
+          sub={`dep ${fmtArs(totalDep)} · ret ${fmtArs(totalWit)}`}
+          color={saldoBanca >= 0 ? 'text-slate-200' : 'text-rose-400'}
+        />
+      </div>
+
+      {/* Gráfico */}
+      {chartPoints.length >= 2 && (
+        <div className="bg-white dark:bg-navy-800 rounded-2xl border border-stone-200 dark:border-navy-700 p-5">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
+            Lucro Acumulado
+          </p>
+          <ProfitChart points={chartPoints} />
+          <div className="flex justify-between text-xs text-slate-500 mt-1">
+            <span>1ª aposta</span>
+            <span className={netProfit >= 0 ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
+              {fmtArs(netProfit)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Apostas Pendentes */}
+      <div>
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
+          Apostas Pendentes {pending.length > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px]">{pending.length}</span>}
+        </p>
+
+        {pending.length === 0 ? (
+          <div className="text-center py-8 text-slate-400 text-sm bg-white dark:bg-navy-800 rounded-2xl border border-stone-200 dark:border-navy-700">
+            Nenhuma aposta pendente. Use o botão <strong>+ Nova Aposta</strong> para registrar.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {pending.map(b => {
+              const potReturn = b.amount * b.odd
+              const potProfit = potReturn - b.amount
+              return (
+                <div key={b.id} className="bg-white dark:bg-navy-800 rounded-2xl border border-amber-500/20 p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{fmtDate(b.bet_date)}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-navy-700 text-slate-400 border border-navy-600">{b.category}</span>
+                      </div>
+                      {b.notes && <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">{b.notes}</p>}
+                    </div>
+                    <span className="text-xs px-2 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 whitespace-nowrap font-semibold">
+                      Em aberto
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-stone-50 dark:bg-navy-900/50 rounded-xl p-2">
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wide">Apostado</p>
+                      <p className="text-sm font-bold font-mono text-slate-700 dark:text-slate-200 mt-0.5">{fmtArs(b.amount)}</p>
+                    </div>
+                    <div className="bg-stone-50 dark:bg-navy-900/50 rounded-xl p-2">
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wide">Odd</p>
+                      <p className="text-sm font-bold font-mono text-gold-400 mt-0.5">{b.odd.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-stone-50 dark:bg-navy-900/50 rounded-xl p-2">
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wide">Lucro pot.</p>
+                      <p className="text-sm font-bold font-mono text-emerald-400 mt-0.5">{fmtArs(potProfit)}</p>
+                    </div>
+                  </div>
+
+                  <FinalizarBtn id={b.id} amount={b.amount} odd={b.odd} />
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Breakdown por categoria */}
+      {catList.length > 0 && (
+        <div className="bg-white dark:bg-navy-800 rounded-2xl border border-stone-200 dark:border-navy-700 p-5">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-4">Por Categoria</p>
+          <div className="space-y-2">
+            {catList.map(c => (
+              <div key={c.cat} className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-slate-700 dark:text-slate-300 truncate">{c.cat}</p>
+                  <p className="text-xs text-slate-400">{c.total} aposta{c.total !== 1 ? 's' : ''} · {c.total > 0 ? Math.round(c.won / c.total * 100) : 0}% acertos</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className={`text-sm font-bold font-mono ${c.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {c.profit >= 0 ? '+' : ''}{fmtArs(c.profit)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
