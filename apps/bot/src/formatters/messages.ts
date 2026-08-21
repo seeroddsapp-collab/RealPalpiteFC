@@ -157,6 +157,30 @@ export function msgNoMatches(): string {
   return '😕 Nenhuma partida disponivel nos proximos 21 dias.';
 }
 
+export function msgOpenPools(
+  groups: Array<{ champName: string; matches: Array<{ match: any; pools: any[] }> }>,
+): string {
+  if (groups.length === 0) {
+    return (
+      `🔥 *Bolões Abertos*\n\n` +
+      `Nenhum bolão disponível no momento.\n` +
+      `Novos bolões abrem conforme as partidas são cadastradas.`
+    );
+  }
+  let msg = `🔥 *Bolões Abertos agora*\n\n`;
+  for (const group of groups) {
+    msg += `🏆 *${group.champName}*\n`;
+    for (const { match } of group.matches) {
+      const time = new Date(match.kickoff_at).toLocaleTimeString('pt-BR', {
+        hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
+      });
+      msg += `⚽ ${match.home_team} × ${match.away_team} — ${time}\n`;
+    }
+    msg += `\n`;
+  }
+  return msg.trimEnd() + `\n\nEscolha um bolão para entrar:`;
+}
+
 export function msgTodayMatches(groups: Array<{ champName: string; matches: MatchRow[] }>): string {
   if (groups.length === 0) {
     return (

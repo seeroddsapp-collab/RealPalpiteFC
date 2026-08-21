@@ -4,6 +4,7 @@ import { fmtDate, fmtModality } from '../formatters/messages';
 
 export function kbMainMenu() {
   return Markup.inlineKeyboard([
+    [Markup.button.callback('🔥 Bolões Abertos', 'gl_open')],
     [Markup.button.callback('🌐 Listas Globais', 'gl_ch')],
     [Markup.button.callback('📋 Minhas Entradas', 'me')],
     [Markup.button.callback('🔒 Minhas Listas', 'my_pools')],
@@ -68,6 +69,25 @@ export function kbChampionships(championships: ChampionshipRow[]) {
   ];
   for (const c of championships) {
     rows.push([Markup.button.callback(c.name, `gl_m:${c.id}`)]);
+  }
+  rows.push([Markup.button.callback('🏠 Menu', 'menu')]);
+  return Markup.inlineKeyboard(rows);
+}
+
+export function kbOpenPools(groups: Array<{ champName: string; matches: Array<{ match: any; pools: any[] }> }>) {
+  const rows: ReturnType<typeof Markup.button.callback>[][] = [];
+  for (const group of groups) {
+    for (const { match, pools } of group.matches) {
+      for (const pool of pools) {
+        const time = new Date(match.kickoff_at).toLocaleTimeString('pt-BR', {
+          hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
+        });
+        const abbrev = (n: string) => n.length > 9 ? n.slice(0, 8) + '.' : n;
+        const mod = fmtModality(pool.modality);
+        const label = `⚽ ${abbrev(match.home_team)}×${abbrev(match.away_team)} ${time} · ${mod} R$${pool.tier_brl}`;
+        rows.push([Markup.button.callback(label, `gl_e:${pool.id}`)]);
+      }
+    }
   }
   rows.push([Markup.button.callback('🏠 Menu', 'menu')]);
   return Markup.inlineKeyboard(rows);

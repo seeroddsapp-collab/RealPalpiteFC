@@ -6,8 +6,9 @@ import {
   msgNoChampionships,
   msgHowToPlay,
   msgTodayMatches,
+  msgOpenPools,
 } from '../formatters/messages';
-import { kbMainMenu, kbChampionships, kbTodayMatches, kbBackToMenu } from '../keyboards/keyboards';
+import { kbMainMenu, kbChampionships, kbTodayMatches, kbOpenPools, kbBackToMenu } from '../keyboards/keyboards';
 
 function safeEdit(ctx: BotContext, text: string, extra: Record<string, unknown>) {
   return ctx.editMessageText(text, extra as never)
@@ -46,6 +47,46 @@ export function registerMenuActions(bot: { action: (...args: unknown[]) => void 
     await safeEdit(ctx, msgChampionships(), {
       parse_mode: 'Markdown',
       reply_markup: kbChampionships(championships).reply_markup,
+    });
+  });
+
+  // Bolões Abertos — todos os pools com status open, agrupados por campeonato/partida
+  (bot as any).action('gl_open', async (ctx: BotContext) => {
+    await ctx.answerCbQuery();
+
+    const { data: pools } = await db.client
+      .from('pools')
+      .select('id, modality, tier_brl, match_id, matches(id, home_team, away_team, kickoff_at, championships(name))')
+      .eq('status', 'open')
+      .eq('type', 'global')
+      .order('match_id');
+
+    // Agrupa: campeonato → partida → pools
+    type MatchEntry = { match: any; pools: any[] };
+    const champMap = new Map<string, { champName: string; matchMap: Map<string, MatchEntry> }>();
+
+    for (const pool of pools ?? []) {
+      const match = pool.matches as any;
+      if (!match) continue;
+      const champName = match.championships?.name ?? 'Outros';
+      const matchId = match.id;
+
+      if (!champMap.has(champName)) champMap.set(champName, { champName, matchMap: new Map() });
+      const { matchMap } = champMap.get(champName)!;
+      if (!matchMap.has(matchId)) matchMap.set(matchId, { match, pools: [] });
+      matchMap.get(matchId)!.pools.push(pool);
+    }
+
+    const groups = [...champMap.values()].map(g => ({
+      champName: g.champName,
+      matches: [...g.matchMap.values()].sort(
+        (a, b) => new Date(a.match.kickoff_at).getTime() - new Date(b.match.kickoff_at).getTime(),
+      ),
+    }));
+
+    await safeEdit(ctx, msgOpenPools(groups), {
+      parse_mode: 'Markdown',
+      reply_markup: kbOpenPools(groups).reply_markup,
     });
   });
 
