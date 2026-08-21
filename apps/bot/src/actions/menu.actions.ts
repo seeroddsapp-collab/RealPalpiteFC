@@ -58,7 +58,7 @@ export function registerMenuActions(bot: { action: (...args: unknown[]) => void 
 
     const { data: pools } = await db.client
       .from('pools')
-      .select('id, modality, tier_brl, match_id, matches(id, home_team, away_team, kickoff_at, championships(name))')
+      .select('id, modality, tier_brl, ghost_count, match_id, matches(id, home_team, away_team, kickoff_at, championships(name))')
       .eq('status', 'open')
       .eq('type', 'global')
       .order('match_id');
@@ -80,12 +80,16 @@ export function registerMenuActions(bot: { action: (...args: unknown[]) => void 
       }
     }
 
-    // Agrupa: campeonato → partida → pools (apenas pools com ao menos 1 entrada)
+    // Agrupa: campeonato → partida → pools (apenas pools com ao menos 1 participante, real ou fantasma)
     const champMap = new Map<string, { champName: string; matchMap: Map<string, { match: any; pools: OpenPoolEntry[] }> }>();
 
     for (const pool of pools ?? []) {
-      const stats = statsMap.get((pool as any).id);
-      if (!stats || stats.count === 0) continue; // pula pools sem participantes
+      const tierBrl = Number((pool as any).tier_brl);
+      const ghostCount = Number((pool as any).ghost_count ?? 0);
+      const real = statsMap.get((pool as any).id) ?? { count: 0, total: 0 };
+      const totalCount = real.count + ghostCount;
+
+      if (totalCount === 0) continue; // pula pools realmente vazios
 
       const match = (pool as any).matches as any;
       if (!match) continue;
@@ -99,9 +103,9 @@ export function registerMenuActions(bot: { action: (...args: unknown[]) => void 
       const entry: OpenPoolEntry = {
         id: (pool as any).id,
         modality: (pool as any).modality,
-        tierBrl: Number((pool as any).tier_brl),
-        participants: stats.count,
-        estimatedPrize: stats.total * 0.95,
+        tierBrl,
+        participants: totalCount,
+        estimatedPrize: (real.total + ghostCount * tierBrl) * 0.95,
       };
       matchMap.get(matchId)!.pools.push(entry);
     }
