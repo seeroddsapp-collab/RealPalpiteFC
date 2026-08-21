@@ -59,6 +59,37 @@ export async function updateChampionshipCodes(
   revalidatePath('/dashboard/campeonatos')
 }
 
+export async function getGhostSettings(): Promise<{
+  ghost_mode_enabled: boolean
+  ghost_max_initial: number
+  ghost_ratio_at_close: number
+}> {
+  const db = createAdminClient()
+  const { data } = await db.from('platform_settings').select('key, value')
+  const map = Object.fromEntries((data ?? []).map(r => [r.key, r.value]))
+  return {
+    ghost_mode_enabled:   map['ghost_mode_enabled']   === 'true',
+    ghost_max_initial:    Number(map['ghost_max_initial']    ?? 15),
+    ghost_ratio_at_close: Number(map['ghost_ratio_at_close'] ?? 3),
+  }
+}
+
+export async function updateGhostSettings(settings: {
+  ghost_mode_enabled: boolean
+  ghost_max_initial: number
+  ghost_ratio_at_close: number
+}) {
+  const db = createAdminClient()
+  const now = new Date().toISOString()
+  const rows = Object.entries(settings).map(([key, value]) => ({
+    key,
+    value: String(value),
+    updated_at: now,
+  }))
+  await db.from('platform_settings').upsert(rows, { onConflict: 'key' })
+  revalidatePath('/dashboard/configuracoes')
+}
+
 export async function overrideResult(
   poolId: string,
   matchId: string,

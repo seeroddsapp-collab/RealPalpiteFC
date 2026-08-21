@@ -1,17 +1,18 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Layers, Users, Trophy, CalendarDays, FileText, ShieldCheck, Wallet, type LucideIcon } from 'lucide-react'
+import { LayoutDashboard, Layers, Users, Trophy, CalendarDays, FileText, ShieldCheck, Wallet, Settings, type LucideIcon } from 'lucide-react'
 
 const NAV: { href: string; label: string; Icon: LucideIcon; exact?: boolean }[] = [
-  { href: '/dashboard',              label: 'Dashboard',   Icon: LayoutDashboard, exact: true },
-  { href: '/dashboard/pools',        label: 'Pools',       Icon: Layers },
-  { href: '/dashboard/partidas',     label: 'Partidas',    Icon: CalendarDays },
-  { href: '/dashboard/entradas',     label: 'Entradas',    Icon: FileText },
-  { href: '/dashboard/usuarios',     label: 'Usuários',    Icon: Users },
-  { href: '/dashboard/campeonatos',  label: 'Campeonatos', Icon: Trophy },
-  { href: '/dashboard/financeiro',   label: 'Financeiro',  Icon: Wallet },
-  { href: '/dashboard/audit',        label: 'Audit Log',   Icon: ShieldCheck },
+  { href: '/dashboard',                  label: 'Dashboard',     Icon: LayoutDashboard, exact: true },
+  { href: '/dashboard/pools',            label: 'Pools',         Icon: Layers },
+  { href: '/dashboard/partidas',         label: 'Partidas',      Icon: CalendarDays },
+  { href: '/dashboard/entradas',         label: 'Entradas',      Icon: FileText },
+  { href: '/dashboard/usuarios',         label: 'Usuários',      Icon: Users },
+  { href: '/dashboard/campeonatos',      label: 'Campeonatos',   Icon: Trophy },
+  { href: '/dashboard/financeiro',       label: 'Financeiro',    Icon: Wallet },
+  { href: '/dashboard/audit',            label: 'Audit Log',     Icon: ShieldCheck },
+  { href: '/dashboard/configuracoes',    label: 'Configurações', Icon: Settings },
 ]
 
 function NavItem({ href, label, Icon, exact }: { href: string; label: string; Icon: LucideIcon; exact?: boolean }) {
