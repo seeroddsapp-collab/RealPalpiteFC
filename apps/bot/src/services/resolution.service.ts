@@ -27,6 +27,7 @@ export type ResolutionResult = {
   totalWinners: number;
   totalPrizeBrl: number;
   winnerInfo: { username: string | null; prize: number } | null;
+  displayTotal?: number;
 };
 
 function buildEvalContext(pool: PoolRow, prediction: Json, result: MatchResult): EvaluationContext {
@@ -68,7 +69,9 @@ export async function resolvePool(
     return { id: e.id, userId: e.user_id, amount: e.amount, isWinner };
   });
 
-  const calcResult = calculatePool({ entries: entryInputs, matchCancelled: cancelled });
+  const ghostCount = pool.ghost_count ?? 0;
+  const displayTotal = dbEntries.length + ghostCount;
+  const useGhostPayout = ghostCount > 0 && !cancelled;
 
   const winnerIds = entryInputs.filter(e => e.isWinner).map(e => e.id);
   await db.entries.resolveEntries(pool.id, winnerIds);
@@ -77,53 +80,99 @@ export async function resolvePool(
   let totalWinners = 0;
   let totalPrizeBrl = 0;
   let winnerInfo: { username: string | null; prize: number } | null = null;
+  let resolvedScenario: string;
 
-  for (const payout of calcResult.payouts) {
-    if (payout.amount <= 0) continue;
+  if (useGhostPayout) {
+    // Ghost mode: pay each real winner tier × 0.95 fixed; losers get nothing (house keeps)
+    const realWinners = entryInputs.filter(e => e.isWinner);
+    resolvedScenario = realWinners.length > 0 ? 'with_winners' : 'no_winners';
 
-    const user = await db.users.findById(payout.userId);
-    if (!user) continue;
+    for (const winner of realWinners) {
+      const prize = Math.round(pool.tier_brl * 0.95 * 100) / 100;
+      const user = await db.users.findById(winner.userId);
+      if (!user) continue;
 
-    const isWinner = entryInputs.find(e => e.userId === payout.userId)?.isWinner ?? false;
-    const creditType: 'prize' | 'refund' = isWinner ? 'prize' : 'refund';
-
-    if (isWinner) {
       totalWinners++;
-      totalPrizeBrl += payout.amount;
-      if (!winnerInfo) winnerInfo = { username: user.username ?? null, prize: payout.amount };
+      totalPrizeBrl += prize;
+      if (!winnerInfo) winnerInfo = { username: user.username ?? null, prize };
+
+      const newBalance = user.virtual_balance + prize;
+      await db.transactions.create({
+        user_id: winner.userId,
+        type: 'prize',
+        amount: prize,
+        balance_after: newBalance,
+        pool_id: pool.id,
+        description: `Prêmio — ${pool.modality}`,
+      });
+      await db.users.updateBalance(winner.userId, newBalance);
+
+      userResults.push({
+        telegramId: user.telegram_id,
+        userId: winner.userId,
+        modality: pool.modality,
+        tier: pool.tier_brl,
+        creditType: 'prize',
+        amount: prize,
+        newBalance,
+      });
     }
+  } else {
+    const calcResult = calculatePool({ entries: entryInputs, matchCancelled: cancelled });
+    resolvedScenario = calcResult.scenario;
 
-    const description = cancelled
-      ? `Devolução (partida cancelada)`
-      : isWinner
-        ? `Prêmio — ${pool.modality}`
-        : `Devolução (sem acertador) — ${pool.modality}`;
+    for (const payout of calcResult.payouts) {
+      if (payout.amount <= 0) continue;
 
-    const newBalance = user.virtual_balance + payout.amount;
+      const user = await db.users.findById(payout.userId);
+      if (!user) continue;
 
-    await db.transactions.create({
-      user_id: payout.userId,
-      type: creditType,
-      amount: payout.amount,
-      balance_after: newBalance,
-      pool_id: pool.id,
-      description,
-    });
+      const isWinner = entryInputs.find(e => e.userId === payout.userId)?.isWinner ?? false;
+      const creditType: 'prize' | 'refund' = isWinner ? 'prize' : 'refund';
 
-    await db.users.updateBalance(payout.userId, newBalance);
+      if (isWinner) {
+        totalWinners++;
+        totalPrizeBrl += payout.amount;
+        if (!winnerInfo) winnerInfo = { username: user.username ?? null, prize: payout.amount };
+      }
 
-    userResults.push({
-      telegramId: user.telegram_id,
-      userId: payout.userId,
-      modality: pool.modality,
-      tier: pool.tier_brl,
-      creditType,
-      amount: payout.amount,
-      newBalance,
-    });
+      const description = cancelled
+        ? `Devolução (partida cancelada)`
+        : isWinner
+          ? `Prêmio — ${pool.modality}`
+          : `Devolução (sem acertador) — ${pool.modality}`;
+
+      const newBalance = user.virtual_balance + payout.amount;
+      await db.transactions.create({
+        user_id: payout.userId,
+        type: creditType,
+        amount: payout.amount,
+        balance_after: newBalance,
+        pool_id: pool.id,
+        description,
+      });
+      await db.users.updateBalance(payout.userId, newBalance);
+
+      userResults.push({
+        telegramId: user.telegram_id,
+        userId: payout.userId,
+        modality: pool.modality,
+        tier: pool.tier_brl,
+        creditType,
+        amount: payout.amount,
+        newBalance,
+      });
+    }
   }
 
   await db.pools.resolve(pool.id);
 
-  return { scenario: calcResult.scenario, userResults, totalWinners, totalPrizeBrl, winnerInfo };
+  return {
+    scenario: resolvedScenario,
+    userResults,
+    totalWinners,
+    totalPrizeBrl,
+    winnerInfo,
+    displayTotal: ghostCount > 0 ? displayTotal : undefined,
+  };
 }

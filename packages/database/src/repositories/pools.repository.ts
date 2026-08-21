@@ -102,6 +102,14 @@ export class PoolsRepository {
     if (error) throw error;
   }
 
+  async updateGhostCount(poolId: string, count: number): Promise<void> {
+    const { error } = await this.db
+      .from('pools')
+      .update({ ghost_count: count })
+      .eq('id', poolId);
+    if (error) throw error;
+  }
+
   async findByCreator(userId: string): Promise<PoolRow[]> {
     const { data, error } = await this.db
       .from('pools')

@@ -144,6 +144,7 @@ export type Database = {
           created_by: string | null;
           closed_at: string | null;
           resolved_at: string | null;
+          ghost_count: number;
           created_at: string;
         };
         Insert: {
@@ -157,6 +158,7 @@ export type Database = {
           created_by?: string | null;
           closed_at?: string | null;
           resolved_at?: string | null;
+          ghost_count?: number;
           created_at?: string;
         };
         Update: {
@@ -170,6 +172,7 @@ export type Database = {
           created_by?: string | null;
           closed_at?: string | null;
           resolved_at?: string | null;
+          ghost_count?: number;
           created_at?: string;
         };
         Relationships: [

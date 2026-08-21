@@ -3,6 +3,7 @@ import type { BotContext } from '../context';
 import type { Db, PoolInsert, PoolRow } from '@realpalpitefc/database';
 import type { SportsDataService } from '@realpalpitefc/sports-data';
 import { notifyGroupsPoolsOpened } from './group-notifications.service';
+import { getGhostSettings, randomGhostCount, type GhostSettings } from './ghost.service';
 
 const DAYS_AHEAD = 21;
 const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 horas
@@ -32,11 +33,16 @@ async function createMissingPools(
   db: Db,
   matchId: string,
   existing: PoolRow[],
+  ghost?: GhostSettings,
 ): Promise<void> {
   const existingKeys = new Set(existing.map(p => `${p.modality}:${p.tier_brl}`));
   const missing = GLOBAL_POOLS_CONFIG.filter(p => !existingKeys.has(`${p.modality}:${p.tier_brl}`));
-  for (const pool of missing) {
-    await db.pools.create({ ...pool, match_id: matchId, created_by: null });
+  for (const poolConfig of missing) {
+    const pool = await db.pools.create({ ...poolConfig, match_id: matchId, created_by: null });
+    if (ghost?.enabled) {
+      const count = randomGhostCount(ghost.maxInitial);
+      await db.pools.updateGhostCount(pool.id, count).catch(() => null);
+    }
   }
 }
 
@@ -91,7 +97,8 @@ export async function syncMatches(
 
         if (m.status === 'scheduled' || m.status === 'in_progress') {
           const existingPools = await db.pools.findOpenByMatch(matchId);
-          await createMissingPools(db, matchId, existingPools).catch((err: unknown) =>
+          const ghost = await getGhostSettings(db.client).catch(() => undefined);
+          await createMissingPools(db, matchId, existingPools, ghost).catch((err: unknown) =>
             console.error(`[sync] Erro ao criar pools para partida ${matchId}:`, err),
           );
         }

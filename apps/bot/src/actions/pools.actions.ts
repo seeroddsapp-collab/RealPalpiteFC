@@ -122,7 +122,7 @@ export function registerPoolsActions(bot: { action: (...args: unknown[]) => void
     }
 
     const counts = await Promise.all(
-      pools.map(p => db.entries.findByPool(p.id).then(e => [p.id, e.length] as [string, number])),
+      pools.map(p => db.entries.findByPool(p.id).then(e => [p.id, e.length + (p.ghost_count ?? 0)] as [string, number])),
     );
     const entryCounts = Object.fromEntries(counts);
 
@@ -147,7 +147,7 @@ export function registerPoolsActions(bot: { action: (...args: unknown[]) => void
     if (!match) { await ctx.reply('❌ Partida não encontrada.'); return; }
 
     const entries = await db.entries.findByPool(poolId);
-    const entryCount = entries.length;
+    const entryCount = entries.length + (pool.ghost_count ?? 0);
     const user = ctx.session.user!;
 
     // Saldo insuficiente — mostra detalhe mas sem botões de palpite

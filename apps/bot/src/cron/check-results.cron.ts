@@ -11,7 +11,7 @@ const INTERVAL_MS = 2 * 60_000;
 function buildUserDm(
   match: { home_team: string; away_team: string },
   score: { homeScore: number; awayScore: number },
-  results: Array<{ modality: Parameters<typeof fmtModality>[0]; tier: number; creditType: 'prize' | 'refund'; amount: number; newBalance: number }>,
+  results: Array<{ modality: Parameters<typeof fmtModality>[0]; tier: number; creditType: 'prize' | 'refund'; amount: number; newBalance: number; displayTotal?: number }>,
 ): string {
   let msg = `⚽ *${match.home_team} ${score.homeScore} x ${score.awayScore} ${match.away_team}*\n\n`;
   msg += `Seus resultados:\n`;
@@ -19,7 +19,8 @@ function buildUserDm(
   for (const r of results) {
     const label = fmtModality(r.modality);
     if (r.creditType === 'prize') {
-      msg += `✅ ${label} (${fmtBrl(r.tier)}) → Ganhou *${fmtBrl(r.amount)}*\n`;
+      const division = r.displayTotal ? ` _(dividido entre ${r.displayTotal} participantes)_` : '';
+      msg += `✅ ${label} (${fmtBrl(r.tier)}) → Ganhou *${fmtBrl(r.amount)}*${division}\n`;
     } else {
       msg += `↩️ ${label} (${fmtBrl(r.tier)}) → Devolvido *${fmtBrl(r.amount)}*\n`;
     }
@@ -77,7 +78,7 @@ async function processMatch(
     : { homeScore: 0, awayScore: 0 };
 
   // Acumula resultados de todas as pools
-  type UserEntry = { modality: Parameters<typeof fmtModality>[0]; tier: number; creditType: 'prize' | 'refund'; amount: number; newBalance: number };
+  type UserEntry = { modality: Parameters<typeof fmtModality>[0]; tier: number; creditType: 'prize' | 'refund'; amount: number; newBalance: number; displayTotal?: number };
   const byUser = new Map<number, UserEntry[]>();
   let groupScenario: string | null = null;
   let groupTotalWinners = 0;
@@ -102,6 +103,7 @@ async function processMatch(
         creditType: r.creditType,
         amount: r.amount,
         newBalance: r.newBalance,
+        displayTotal: r.creditType === 'prize' ? result.displayTotal : undefined,
       });
     }
 
