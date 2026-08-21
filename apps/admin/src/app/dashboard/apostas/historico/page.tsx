@@ -1,9 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { FinalizarBtn } from '@/components/apostas/finalizar-btn'
-import { deleteMovement } from '@/actions/apostas'
 
 function fmtArs(n: number) {
   const abs = Math.abs(n)

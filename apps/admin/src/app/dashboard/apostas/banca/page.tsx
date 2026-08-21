@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
@@ -20,18 +21,6 @@ function fmtDatetime(iso: string) {
 
 type Movement = { id: string; type: string; amount: number; notes: string | null; created_at: string }
 
-function DeleteBtn({ id }: { id: string }) {
-  async function action() {
-    'use server'
-    const { deleteMovement: del } = await import('@/actions/apostas')
-    await del(id)
-  }
-  return (
-    <form action={action}>
-      <button type="submit" className="text-slate-600 hover:text-rose-400 text-sm transition-colors" title="Excluir">🗑</button>
-    </form>
-  )
-}
 
 export default async function BancaPage() {
   const db = createAdminClient()
@@ -113,7 +102,9 @@ export default async function BancaPage() {
                 <p className={`font-bold font-mono text-sm shrink-0 ${m.type === 'deposit' ? 'text-emerald-400' : 'text-rose-400'}`}>
                   {m.type === 'deposit' ? '+' : '-'}{fmtArs(m.amount)}
                 </p>
-                <DeleteBtn id={m.id} />
+                <form action={deleteMovement.bind(null, m.id)}>
+                  <button type="submit" className="text-slate-600 hover:text-rose-400 text-sm transition-colors" title="Excluir">🗑</button>
+                </form>
               </div>
             ))}
           </div>
