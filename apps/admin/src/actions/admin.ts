@@ -63,6 +63,7 @@ export async function getGhostSettings(): Promise<{
   ghost_mode_enabled: boolean
   ghost_max_initial: number
   ghost_ratio_at_close: number
+  ghost_fill_rate: number
 }> {
   const db = createAdminClient()
   const { data } = await db.from('platform_settings').select('key, value')
@@ -71,6 +72,7 @@ export async function getGhostSettings(): Promise<{
     ghost_mode_enabled:   map['ghost_mode_enabled']   === 'true',
     ghost_max_initial:    Number(map['ghost_max_initial']    ?? 15),
     ghost_ratio_at_close: Number(map['ghost_ratio_at_close'] ?? 3),
+    ghost_fill_rate:      Number(map['ghost_fill_rate']      ?? 60),
   }
 }
 
@@ -78,6 +80,7 @@ export async function updateGhostSettings(settings: {
   ghost_mode_enabled: boolean
   ghost_max_initial: number
   ghost_ratio_at_close: number
+  ghost_fill_rate: number
 }) {
   const db = createAdminClient()
   const now = new Date().toISOString()

@@ -39,7 +39,7 @@ async function createMissingPools(
   const missing = GLOBAL_POOLS_CONFIG.filter(p => !existingKeys.has(`${p.modality}:${p.tier_brl}`));
   for (const poolConfig of missing) {
     const pool = await db.pools.create({ ...poolConfig, match_id: matchId, created_by: null });
-    if (ghost?.enabled) {
+    if (ghost?.enabled && Math.random() * 100 < ghost.fillRate) {
       const count = randomGhostCount(ghost.maxInitial);
       await db.pools.updateGhostCount(pool.id, count).catch(() => null);
     }

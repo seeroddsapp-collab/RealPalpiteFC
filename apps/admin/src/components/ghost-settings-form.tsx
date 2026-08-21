@@ -7,6 +7,7 @@ type Settings = {
   ghost_mode_enabled: boolean
   ghost_max_initial: number
   ghost_ratio_at_close: number
+  ghost_fill_rate: number
 }
 
 export function GhostSettingsForm({ initial }: { initial: Settings }) {
@@ -122,6 +123,30 @@ export function GhostSettingsForm({ initial }: { initial: Settings }) {
             </div>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
               Ao fechar, total de participantes = reais × este valor.
+            </p>
+          </div>
+
+          {/* Fill rate */}
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+              Taxa de preenchimento
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                min={10}
+                max={100}
+                step={5}
+                value={settings.ghost_fill_rate}
+                onChange={e => setSettings(s => ({ ...s, ghost_fill_rate: Number(e.target.value) }))}
+                className="flex-1 accent-gold-500"
+              />
+              <span className="w-12 text-center font-mono font-bold text-slate-800 dark:text-slate-200 text-sm">
+                {settings.ghost_fill_rate}%
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+              Chance de cada pool receber fantasmas ao ser criado. Pools sem fantasmas aparecem vazios — mais natural.
             </p>
           </div>
         </div>

@@ -4,6 +4,7 @@ export type GhostSettings = {
   enabled: boolean;
   maxInitial: number;
   ratioAtClose: number;
+  fillRate: number; // 0–100: chance (%) de cada pool receber fantasmas
 };
 
 export async function getGhostSettings(client: SupabaseClient): Promise<GhostSettings> {
@@ -15,6 +16,7 @@ export async function getGhostSettings(client: SupabaseClient): Promise<GhostSet
     enabled:      map['ghost_mode_enabled'] === 'true',
     maxInitial:   Number(map['ghost_max_initial']    ?? 15),
     ratioAtClose: Number(map['ghost_ratio_at_close'] ?? 3),
+    fillRate:     Number(map['ghost_fill_rate']      ?? 60),
   };
 }
 
