@@ -7,6 +7,8 @@ import {
   msgHowToPlay,
   msgTodayMatches,
   msgOpenPools,
+  type OpenPoolChampGroup,
+  type OpenPoolEntry,
 } from '../formatters/messages';
 import { kbMainMenu, kbChampionships, kbTodayMatches, kbOpenPools, kbBackToMenu } from '../keyboards/keyboards';
 
@@ -50,7 +52,7 @@ export function registerMenuActions(bot: { action: (...args: unknown[]) => void 
     });
   });
 
-  // Bolões Abertos — todos os pools com status open, agrupados por campeonato/partida
+  // Bolões Abertos — pools com status open E ao menos 1 participante, com contagem e prêmio estimado
   (bot as any).action('gl_open', async (ctx: BotContext) => {
     await ctx.answerCbQuery();
 
@@ -61,12 +63,31 @@ export function registerMenuActions(bot: { action: (...args: unknown[]) => void 
       .eq('type', 'global')
       .order('match_id');
 
-    // Agrupa: campeonato → partida → pools
-    type MatchEntry = { match: any; pools: any[] };
-    const champMap = new Map<string, { champName: string; matchMap: Map<string, MatchEntry> }>();
+    const poolIds = (pools ?? []).map((p: any) => p.id);
+    let statsMap = new Map<string, { count: number; total: number }>();
+
+    if (poolIds.length > 0) {
+      const { data: entries } = await db.client
+        .from('entries')
+        .select('pool_id, amount')
+        .in('pool_id', poolIds);
+
+      for (const e of entries ?? []) {
+        const s = statsMap.get(e.pool_id) ?? { count: 0, total: 0 };
+        s.count++;
+        s.total += Number(e.amount);
+        statsMap.set(e.pool_id, s);
+      }
+    }
+
+    // Agrupa: campeonato → partida → pools (apenas pools com ao menos 1 entrada)
+    const champMap = new Map<string, { champName: string; matchMap: Map<string, { match: any; pools: OpenPoolEntry[] }> }>();
 
     for (const pool of pools ?? []) {
-      const match = pool.matches as any;
+      const stats = statsMap.get((pool as any).id);
+      if (!stats || stats.count === 0) continue; // pula pools sem participantes
+
+      const match = (pool as any).matches as any;
       if (!match) continue;
       const champName = match.championships?.name ?? 'Outros';
       const matchId = match.id;
@@ -74,10 +95,18 @@ export function registerMenuActions(bot: { action: (...args: unknown[]) => void 
       if (!champMap.has(champName)) champMap.set(champName, { champName, matchMap: new Map() });
       const { matchMap } = champMap.get(champName)!;
       if (!matchMap.has(matchId)) matchMap.set(matchId, { match, pools: [] });
-      matchMap.get(matchId)!.pools.push(pool);
+
+      const entry: OpenPoolEntry = {
+        id: (pool as any).id,
+        modality: (pool as any).modality,
+        tierBrl: Number((pool as any).tier_brl),
+        participants: stats.count,
+        estimatedPrize: stats.total * 0.95,
+      };
+      matchMap.get(matchId)!.pools.push(entry);
     }
 
-    const groups = [...champMap.values()].map(g => ({
+    const groups: OpenPoolChampGroup[] = [...champMap.values()].map(g => ({
       champName: g.champName,
       matches: [...g.matchMap.values()].sort(
         (a, b) => new Date(a.match.kickoff_at).getTime() - new Date(b.match.kickoff_at).getTime(),

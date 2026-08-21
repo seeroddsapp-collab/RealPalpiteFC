@@ -157,28 +157,48 @@ export function msgNoMatches(): string {
   return '😕 Nenhuma partida disponivel nos proximos 21 dias.';
 }
 
-export function msgOpenPools(
-  groups: Array<{ champName: string; matches: Array<{ match: any; pools: any[] }> }>,
-): string {
+export type OpenPoolEntry = {
+  id: string;
+  modality: PoolRow['modality'];
+  tierBrl: number;
+  participants: number;
+  estimatedPrize: number;
+};
+
+export type OpenPoolMatchGroup = {
+  match: { id: string; home_team: string; away_team: string; kickoff_at: string };
+  pools: OpenPoolEntry[];
+};
+
+export type OpenPoolChampGroup = {
+  champName: string;
+  matches: OpenPoolMatchGroup[];
+};
+
+export function msgOpenPools(groups: OpenPoolChampGroup[]): string {
   if (groups.length === 0) {
     return (
       `🔥 *Bolões Abertos*\n\n` +
-      `Nenhum bolão disponível no momento.\n` +
-      `Novos bolões abrem conforme as partidas são cadastradas.`
+      `Nenhum bolão com participantes no momento.\n` +
+      `Seja o primeiro a entrar — se ficar sozinho, 100% é devolvido!`
     );
   }
-  let msg = `🔥 *Bolões Abertos agora*\n\n`;
+  let msg = `🔥 *Bolões com participantes*\n\n`;
   for (const group of groups) {
     msg += `🏆 *${group.champName}*\n`;
-    for (const { match } of group.matches) {
+    for (const { match, pools } of group.matches) {
       const time = new Date(match.kickoff_at).toLocaleTimeString('pt-BR', {
         hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
       });
-      msg += `⚽ ${match.home_team} × ${match.away_team} — ${time}\n`;
+      msg += `⚽ *${match.home_team} × ${match.away_team}* — ${time}\n`;
+      for (const pool of pools) {
+        const plural = pool.participants === 1 ? 'jogador' : 'jogadores';
+        msg += `  • ${fmtModality(pool.modality)} R$${pool.tierBrl} · 👥 ${pool.participants} ${plural} · 🏆 ~${fmtBrl(pool.estimatedPrize)}\n`;
+      }
     }
     msg += `\n`;
   }
-  return msg.trimEnd() + `\n\nEscolha um bolão para entrar:`;
+  return msg.trimEnd() + `\n\nToque para entrar:`;
 }
 
 export function msgTodayMatches(groups: Array<{ champName: string; matches: MatchRow[] }>): string {

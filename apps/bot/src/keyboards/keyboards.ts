@@ -1,6 +1,6 @@
 import { Markup } from 'telegraf';
 import type { ChampionshipRow, MatchRow, PoolRow } from '@realpalpitefc/database';
-import { fmtDate, fmtModality } from '../formatters/messages';
+import { fmtDate, fmtModality, fmtBrl, type OpenPoolChampGroup } from '../formatters/messages';
 
 export function kbMainMenu() {
   return Markup.inlineKeyboard([
@@ -74,17 +74,15 @@ export function kbChampionships(championships: ChampionshipRow[]) {
   return Markup.inlineKeyboard(rows);
 }
 
-export function kbOpenPools(groups: Array<{ champName: string; matches: Array<{ match: any; pools: any[] }> }>) {
+export function kbOpenPools(groups: OpenPoolChampGroup[]) {
   const rows: ReturnType<typeof Markup.button.callback>[][] = [];
   for (const group of groups) {
     for (const { match, pools } of group.matches) {
       for (const pool of pools) {
-        const time = new Date(match.kickoff_at).toLocaleTimeString('pt-BR', {
-          hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
-        });
         const abbrev = (n: string) => n.length > 9 ? n.slice(0, 8) + '.' : n;
         const mod = fmtModality(pool.modality);
-        const label = `⚽ ${abbrev(match.home_team)}×${abbrev(match.away_team)} ${time} · ${mod} R$${pool.tier_brl}`;
+        const prize = fmtBrl(pool.estimatedPrize);
+        const label = `${abbrev(match.home_team)}×${abbrev(match.away_team)} · ${mod} R$${pool.tierBrl} · 👥${pool.participants} · 🏆~${prize}`;
         rows.push([Markup.button.callback(label, `gl_e:${pool.id}`)]);
       }
     }
