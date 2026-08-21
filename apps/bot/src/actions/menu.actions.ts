@@ -83,6 +83,8 @@ export function registerMenuActions(bot: { action: (...args: unknown[]) => void 
     // Agrupa: campeonato → partida → pools (apenas pools com ao menos 1 participante, real ou fantasma)
     const champMap = new Map<string, { champName: string; matchMap: Map<string, { match: any; pools: OpenPoolEntry[] }> }>();
 
+    const nowPlus5 = Date.now() + 5 * 60 * 1000;
+
     for (const pool of pools ?? []) {
       const tierBrl = Number((pool as any).tier_brl);
       const ghostCount = Number((pool as any).ghost_count ?? 0);
@@ -93,6 +95,9 @@ export function registerMenuActions(bot: { action: (...args: unknown[]) => void 
 
       const match = (pool as any).matches as any;
       if (!match) continue;
+
+      // Oculta pools cujo jogo já começou ou começa em menos de 5 minutos
+      if (new Date(match.kickoff_at).getTime() <= nowPlus5) continue;
       const champName = match.championships?.name ?? 'Outros';
       const matchId = match.id;
 
@@ -133,12 +138,15 @@ export function registerMenuActions(bot: { action: (...args: unknown[]) => void 
     const startUTC = new Date(todayBR + 'T03:00:00.000Z');
     const endUTC = new Date(startUTC.getTime() + 24 * 60 * 60 * 1000);
 
+    const cutoffUTC = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+
     const { data: rows } = await db.client
       .from('matches')
       .select('*, championships(name)')
       .eq('status', 'scheduled')
       .gte('kickoff_at', startUTC.toISOString())
       .lt('kickoff_at', endUTC.toISOString())
+      .gt('kickoff_at', cutoffUTC)
       .order('kickoff_at', { ascending: true });
 
     // Agrupa por campeonato preservando ordem cronológica
