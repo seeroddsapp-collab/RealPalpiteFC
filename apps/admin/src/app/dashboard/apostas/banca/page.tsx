@@ -24,13 +24,15 @@ type Movement = { id: string; type: string; amount: number; notes: string | null
 
 export default async function BancaPage() {
   const db = createAdminClient()
-  const [{ data: movs }, { data: bets }] = await Promise.all([
+  const [{ data: movs }, { data: bets }, { data: pendingBets }] = await Promise.all([
     db.from('personal_bankroll').select('*').order('created_at', { ascending: false }) as any,
     db.from('personal_bets').select('status, amount, payout').neq('status', 'pending').neq('status', 'void') as any,
+    db.from('personal_bets').select('amount').eq('status', 'pending') as any,
   ])
 
   const movements: Movement[] = movs ?? []
   const settledBets = bets ?? []
+  const pendingLocked: number = (pendingBets ?? []).reduce((s: number, b: any) => s + b.amount, 0)
 
   const totalDep = movements.filter((m: Movement) => m.type === 'deposit').reduce((s: number, m: Movement) => s + m.amount, 0)
   const totalWit = movements.filter((m: Movement) => m.type === 'withdrawal').reduce((s: number, m: Movement) => s + m.amount, 0)
@@ -38,7 +40,7 @@ export default async function BancaPage() {
     if (b.status === 'won') return acc + (b.payout ?? 0) - b.amount
     return acc - b.amount
   }, 0)
-  const saldo = totalDep - totalWit + netProfit
+  const saldo = totalDep - totalWit + netProfit - pendingLocked
 
   return (
     <div className="space-y-6">
@@ -67,6 +69,12 @@ export default async function BancaPage() {
               {netProfit >= 0 ? '+' : ''}{fmtArs(netProfit)}
             </span>
           </div>
+          {pendingLocked > 0 && (
+            <div className="flex justify-between gap-4 border-t border-slate-700 pt-1">
+              <span className="text-amber-400">Bloqueado (pendentes)</span>
+              <span className="text-amber-400">-{fmtArs(pendingLocked)}</span>
+            </div>
+          )}
         </div>
       </div>
 

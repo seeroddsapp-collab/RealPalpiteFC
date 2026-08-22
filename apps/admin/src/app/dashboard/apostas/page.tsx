@@ -127,7 +127,8 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
     if (b.status === 'lost') return acc - b.amount
     return acc
   }, 0)
-  const saldoBanca = totalDep - totalWit + allTimeProfit
+  const pendingLocked = allBets.filter(b => b.status === 'pending').reduce((s, b) => s + b.amount, 0)
+  const saldoBanca = totalDep - totalWit + allTimeProfit - pendingLocked
 
   // Gráfico — sempre all-time (mostra evolução completa)
   let cumulative = 0
@@ -211,7 +212,7 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
         <KpiCard
           label="Saldo na Banca"
           value={fmtArs(saldoBanca)}
-          sub={`dep ${fmtArs(totalDep)} · ret ${fmtArs(totalWit)}`}
+          sub={pendingLocked > 0 ? `${fmtArs(pendingLocked)} bloqueado em apostas` : `dep ${fmtArs(totalDep)} · ret ${fmtArs(totalWit)}`}
           color={saldoBanca >= 0 ? 'text-slate-200' : 'text-rose-400'}
         />
       </div>
