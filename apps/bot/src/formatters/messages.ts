@@ -171,9 +171,25 @@ export type OpenPoolMatchGroup = {
 };
 
 export type OpenPoolChampGroup = {
+  champId: string;
   champName: string;
   matches: OpenPoolMatchGroup[];
 };
+
+export function msgSelectOpenChamp(groups: OpenPoolChampGroup[]): string {
+  if (groups.length === 0) {
+    return (
+      `🔥 *Bolões Abertos*\n\n` +
+      `Nenhum bolão com participantes no momento.\n` +
+      `Seja o primeiro a entrar — se ficar sozinho, 100% é devolvido!`
+    );
+  }
+  const total = groups.reduce((s, g) => s + g.matches.reduce((ms, m) => ms + m.pools.length, 0), 0);
+  return (
+    `🔥 *Bolões Abertos* — ${total} bolão${total !== 1 ? 'ões' : ''}\n\n` +
+    `Escolha o campeonato:`
+  );
+}
 
 export function msgOpenPools(groups: OpenPoolChampGroup[]): string {
   if (groups.length === 0) {
