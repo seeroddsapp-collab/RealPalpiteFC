@@ -12,6 +12,7 @@ export function FinalizarBtn({ id, amount, odd }: Props) {
   const [mode, setMode] = useState<'idle' | 'won' | 'sell' | 'confirm-lost' | 'confirm-void'>('idle')
   const [payout, setPayout] = useState('')
   const [sellPrice, setSellPrice] = useState('')
+  const [sellError, setSellError] = useState('')
   const [isPending, startTransition] = useTransition()
 
   const expectedPayout = (amount * odd).toFixed(2)
@@ -42,9 +43,14 @@ export function FinalizarBtn({ id, amount, odd }: Props) {
   function handleSell() {
     const p = parseFloat(sellPrice)
     if (isNaN(p) || p < 0) return
+    setSellError('')
     startTransition(async () => {
-      await sellBet(id, p)
-      setMode('idle')
+      const result = await sellBet(id, p)
+      if (result?.error) {
+        setSellError(result.error)
+      } else {
+        setMode('idle')
+      }
     })
   }
 
@@ -90,6 +96,9 @@ export function FinalizarBtn({ id, amount, odd }: Props) {
               : <>Perda na venda: <span className="text-rose-400 font-semibold">-${Math.abs(diff).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></>
             }
           </p>
+        )}
+        {sellError && (
+          <p className="text-xs text-rose-400 font-semibold">Erro: {sellError}</p>
         )}
       </div>
     )
