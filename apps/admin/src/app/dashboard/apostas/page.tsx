@@ -138,7 +138,12 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
     if (b.status === 'sold') return acc + (b.sell_price ?? 0) - b.amount
     return acc
   }, 0)
-  const pendingLocked = allBets.filter(b => b.status === 'pending').reduce((s, b) => s + b.amount, 0)
+  const pendingBets = allBets.filter(b => b.status === 'pending')
+  const pendingLocked = pendingBets.reduce((s, b) => s + b.amount, 0)
+  const pendingPotential = pendingBets.reduce((s, b) => s + b.amount * b.odd, 0)
+
+  const soldTotal = sold.reduce((s, b) => s + (b.sell_price ?? 0), 0)
+  const soldProfit = sold.reduce((acc, b) => acc + (b.sell_price ?? 0) - b.amount, 0)
   const saldoBanca = totalDep - totalWit + allTimeProfit - pendingLocked
 
   // Gráfico — sempre all-time (mostra evolução completa)
@@ -201,7 +206,7 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         <KpiCard
           label="Ganho Líquido Real"
           value={fmtArs(netProfit)}
@@ -218,7 +223,7 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
         <KpiCard
           label="Taxa de Acertos"
           value={`${winRate.toFixed(0)}%`}
-          sub={`${won.length}G · ${lost.length}P · ${settled.filter(b => b.status === 'void').length}N`}
+          sub={`${won.length}G · ${lost.length}P · ${sold.length > 0 ? `${sold.length}V · ` : ''}${settled.filter(b => b.status === 'void').length}N`}
           color={winRate >= 50 ? 'text-gold-400' : 'text-slate-300'}
         />
         <KpiCard
@@ -226,6 +231,20 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
           value={fmtArs(saldoBanca)}
           sub={pendingLocked > 0 ? `${fmtArs(pendingLocked)} bloqueado em apostas` : `dep ${fmtArs(totalDep)} · ret ${fmtArs(totalWit)}`}
           color={saldoBanca >= 0 ? 'text-slate-200' : 'text-rose-400'}
+        />
+        <KpiCard
+          label="Em Jogo"
+          value={pendingBets.length > 0 ? fmtArs(pendingLocked) : '—'}
+          sub={pendingBets.length > 0 ? `${pendingBets.length} aposta${pendingBets.length !== 1 ? 's' : ''} · pot. ${fmtArs(pendingPotential)}` : 'Nenhuma aposta pendente'}
+          color={pendingBets.length > 0 ? 'text-amber-400' : 'text-slate-500'}
+          border={pendingBets.length > 0 ? 'border-amber-500/20' : ''}
+        />
+        <KpiCard
+          label="Apostas Vendidas"
+          value={sold.length > 0 ? fmtArs(soldTotal) : '—'}
+          sub={sold.length > 0 ? `${sold.length} venda${sold.length !== 1 ? 's' : ''} · ${soldProfit >= 0 ? '+' : ''}${fmtArs(soldProfit)} líquido` : 'Nenhuma venda no período'}
+          color="text-blue-400"
+          border={sold.length > 0 ? 'border-blue-500/20' : ''}
         />
       </div>
 
