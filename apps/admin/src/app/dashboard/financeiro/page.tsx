@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase-admin'
 
 const PAGE_SIZE = 50
@@ -359,16 +360,16 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
       </div>
 
       {/* ── Seção 5: Tabelas ── */}
-      <div>
+      <div id="tabelas">
         <div className="flex gap-1 border-b border-stone-200 dark:border-navy-700 mb-4">
           {(['depositos', 'saques', 'transacoes'] as const).map(t => (
-            <a key={t} href={url(1, t)}
+            <Link key={t} href={url(1, t) + '#tabelas'} scroll={false}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 tab === t ? 'border-gold-500 text-gold-400' : 'border-transparent text-slate-400 hover:text-gold-400'
               }`}
             >
               {t === 'depositos' ? 'Depósitos' : t === 'saques' ? 'Saques' : 'Transações'}
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -436,7 +437,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
             {/* Filtro por tipo */}
             <div className="flex gap-2 flex-wrap">
               {(['all', 'entry', 'prize', 'refund', 'deposit', 'withdraw'] as const).map(t => (
-                <a key={t} href={url(1, 'transacoes', t)}
+                <Link key={t} href={url(1, 'transacoes', t) + '#tabelas'} scroll={false}
                   className={`text-xs px-3 py-1.5 rounded-lg font-semibold border transition-colors ${
                     txType === t
                       ? 'bg-gold-500/20 text-gold-400 border-gold-500/40'
@@ -444,7 +445,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
                   }`}
                 >
                   {t === 'all' ? 'Todas' : TX_TYPE_LABEL[t] ?? t}
-                </a>
+                </Link>
               ))}
             </div>
 
@@ -481,9 +482,9 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
         {/* Paginação */}
         {totalPages > 1 && (
           <div className="flex gap-2 justify-center pt-4">
-            {page > 1 && <a href={url(page - 1)} className="px-3 py-1 rounded bg-stone-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-stone-200 dark:hover:bg-navy-700 text-sm">← Anterior</a>}
+            {page > 1 && <Link href={url(page - 1) + '#tabelas'} scroll={false} className="px-3 py-1 rounded bg-stone-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-stone-200 dark:hover:bg-navy-700 text-sm">← Anterior</Link>}
             <span className="px-3 py-1 text-slate-400 text-sm">{page} / {totalPages}</span>
-            {page < totalPages && <a href={url(page + 1)} className="px-3 py-1 rounded bg-stone-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-stone-200 dark:hover:bg-navy-700 text-sm">Próxima →</a>}
+            {page < totalPages && <Link href={url(page + 1) + '#tabelas'} scroll={false} className="px-3 py-1 rounded bg-stone-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-stone-200 dark:hover:bg-navy-700 text-sm">Próxima →</Link>}
           </div>
         )}
       </div>
