@@ -203,10 +203,14 @@ export function msgOpenPools(groups: OpenPoolChampGroup[]): string {
   for (const group of groups) {
     msg += `🏆 *${group.champName}*\n`;
     for (const { match, pools } of group.matches) {
-      const time = new Date(match.kickoff_at).toLocaleTimeString('pt-BR', {
-        hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
-      });
-      msg += `⚽ *${match.home_team} × ${match.away_team}* — ${time}\n`;
+      const kickoff = new Date(match.kickoff_at);
+      const todayBR = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const matchDateBR = new Date(kickoff.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const timeStr = kickoff.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+      const when = matchDateBR === todayBR
+        ? `hoje ${timeStr}`
+        : `${kickoff.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })} ${timeStr}`;
+      msg += `⚽ *${match.home_team} × ${match.away_team}* — ${when}\n`;
       for (const pool of pools) {
         const plural = pool.participants === 1 ? 'jogador' : 'jogadores';
         msg += `  • ${fmtModality(pool.modality)} R$${pool.tierBrl} · 👥 ${pool.participants} ${plural} · 🏆 ~${fmtBrl(pool.estimatedPrize)}\n`;
