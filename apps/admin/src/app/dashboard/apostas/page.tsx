@@ -24,6 +24,9 @@ function fmtArs(n: number) {
 function fmtDate(d: string) {
   return new Date(d + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
 }
+function fmtOdd(o: number) {
+  return o.toFixed(3).replace(/(\.\d\d)0$/, '$1')
+}
 
 function KpiCard({ label, value, sub, sub2, sub2Color, color = 'text-slate-200', border = '' }: {
   label: string; value: string; sub?: string; sub2?: string; sub2Color?: string; color?: string; border?: string
@@ -370,7 +373,7 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
                     </div>
                     <div className="bg-stone-50 dark:bg-navy-900/50 rounded-xl p-2">
                       <p className="text-[10px] text-slate-500 uppercase tracking-wide">Odd</p>
-                      <p className="text-sm font-bold font-mono text-gold-400 mt-0.5">{b.odd.toFixed(2)}</p>
+                      <p className="text-sm font-bold font-mono text-gold-400 mt-0.5">{fmtOdd(b.odd)}</p>
                     </div>
                     <div className="bg-stone-50 dark:bg-navy-900/50 rounded-xl p-2">
                       <p className="text-[10px] text-slate-500 uppercase tracking-wide">

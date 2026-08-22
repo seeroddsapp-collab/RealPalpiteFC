@@ -85,9 +85,9 @@ export function NovaApostaForm() {
           <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Odd</label>
           <input
             type="number"
-            step="0.01"
-            min="1.01"
-            placeholder="2.30"
+            step="0.001"
+            min="1.001"
+            placeholder="1.056"
             value={form.odd}
             onChange={e => set('odd', e.target.value)}
             required

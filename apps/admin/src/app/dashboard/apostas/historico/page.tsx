@@ -13,6 +13,9 @@ function fmtArs(n: number) {
 function fmtDate(d: string) {
   return new Date(d + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
+function fmtOdd(o: number) {
+  return o.toFixed(3).replace(/(\.\d\d)0$/, '$1')
+}
 
 const STATUS_CSS: Record<string, string> = {
   pending: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
@@ -142,7 +145,7 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
                   </div>
                   <div className="bg-stone-50 dark:bg-navy-900/50 rounded-xl p-2">
                     <p className="text-[10px] text-slate-500 uppercase">Odd</p>
-                    <p className="text-sm font-bold font-mono text-gold-400 mt-0.5">{b.odd.toFixed(2)}</p>
+                    <p className="text-sm font-bold font-mono text-gold-400 mt-0.5">{fmtOdd(b.odd)}</p>
                   </div>
                   {b.status === 'won' && b.payout != null ? (
                     <div className="bg-stone-50 dark:bg-navy-900/50 rounded-xl p-2">
