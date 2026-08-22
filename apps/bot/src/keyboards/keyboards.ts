@@ -78,7 +78,7 @@ export function kbOpenPoolChamps(groups: OpenPoolChampGroup[]) {
   const rows: ReturnType<typeof Markup.button.callback>[][] = [];
   for (const g of groups) {
     const total = g.matches.reduce((s, m) => s + m.pools.length, 0);
-    const label = `🏆 ${g.champName} · ${total} bolão${total !== 1 ? 'ões' : ''}`;
+    const label = `🏆 ${g.champName} · ${total} ${total !== 1 ? 'bolões' : 'bolão'}`;
     rows.push([Markup.button.callback(label, `gl_open_ch:${g.champId}`)]);
   }
   rows.push([Markup.button.callback('🏠 Menu', 'menu')]);

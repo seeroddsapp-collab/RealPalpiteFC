@@ -186,7 +186,7 @@ export function msgSelectOpenChamp(groups: OpenPoolChampGroup[]): string {
   }
   const total = groups.reduce((s, g) => s + g.matches.reduce((ms, m) => ms + m.pools.length, 0), 0);
   return (
-    `🔥 *Bolões Abertos* — ${total} bolão${total !== 1 ? 'ões' : ''}\n\n` +
+    `🔥 *Bolões Abertos* — ${total} ${total !== 1 ? 'bolões' : 'bolão'}\n\n` +
     `Escolha o campeonato:`
   );
 }
