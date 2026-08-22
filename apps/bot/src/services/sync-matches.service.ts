@@ -44,6 +44,16 @@ async function createMissingPools(
       await db.pools.updateGhostCount(pool.id, count).catch(() => null);
     }
   }
+
+  // Aplica ghost count em pools existentes que não têm nenhum ainda
+  if (ghost?.enabled) {
+    for (const pool of existing) {
+      if ((pool.ghost_count ?? 0) === 0) {
+        const count = randomGhostCount(ghost.maxInitial);
+        await db.pools.updateGhostCount(pool.id, count).catch(() => null);
+      }
+    }
+  }
 }
 
 export async function syncMatches(
