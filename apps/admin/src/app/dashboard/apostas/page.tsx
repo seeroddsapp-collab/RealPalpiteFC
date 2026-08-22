@@ -138,6 +138,8 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
     if (b.status === 'sold') return acc + (b.sell_price ?? 0) - b.amount
     return acc
   }, 0)
+  const bancaROI = totalDep > 0 ? (allTimeProfit / totalDep) * 100 : 0
+
   const pendingBets = allBets.filter(b => b.status === 'pending')
   const pendingLocked = pendingBets.reduce((s, b) => s + b.amount, 0)
   const pendingPotential = pendingBets.reduce((s, b) => s + b.amount * b.odd, 0)
@@ -229,7 +231,7 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
         <KpiCard
           label="Saldo na Banca"
           value={fmtArs(saldoBanca)}
-          sub={pendingLocked > 0 ? `${fmtArs(pendingLocked)} bloqueado em apostas` : `dep ${fmtArs(totalDep)} · ret ${fmtArs(totalWit)}`}
+          sub={totalDep > 0 ? `${bancaROI >= 0 ? '+' : ''}${bancaROI.toFixed(1)}% sobre dep. ${fmtArs(totalDep)}` : `dep ${fmtArs(totalDep)} · ret ${fmtArs(totalWit)}`}
           color={saldoBanca >= 0 ? 'text-slate-200' : 'text-rose-400'}
         />
         <KpiCard
