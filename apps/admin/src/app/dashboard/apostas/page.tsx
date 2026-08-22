@@ -77,9 +77,13 @@ const STATUS_BADGE: Record<string, string> = {
   void:    'bg-slate-500/10 text-slate-400 border-slate-500/20',
 }
 
+function todayBrazil() {
+  return new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10)
+}
+
 function periodCutoff(p: string): string | null {
   const now = new Date()
-  if (p === 'hoje') return now.toISOString().slice(0, 10)
+  if (p === 'hoje') return todayBrazil()
   if (p === 'semana') { const d = new Date(now); d.setDate(d.getDate() - 7); return d.toISOString().slice(0, 10) }
   if (p === 'mes') return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
   if (p === 'ano') { const d = new Date(now); d.setFullYear(d.getFullYear() - 1); return d.toISOString().slice(0, 10) }
@@ -103,7 +107,9 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
 
   // Aplica filtro de período — afeta KPIs e lista
   const cutoff = periodCutoff(periodFilter)
-  const periodBets = cutoff ? allBets.filter(b => b.bet_date >= cutoff!) : allBets
+  const periodBets = periodFilter === 'hoje'
+    ? allBets.filter(b => b.bet_date === todayBrazil())
+    : cutoff ? allBets.filter(b => b.bet_date >= cutoff!) : allBets
 
   // KPIs — baseados no período selecionado
   const settled = periodBets.filter(b => b.status !== 'pending')
@@ -253,7 +259,7 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
         {/* Filtro de status */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
           {(['all', 'pending', 'won', 'lost', 'void'] as const).map(s => {
-            const count = s === 'all' ? allBets.length : allBets.filter(b => b.status === s).length
+            const count = s === 'all' ? periodBets.length : periodBets.filter(b => b.status === s).length
             const active = statusFilter === s
             return (
               <a key={s} href={url({ status: s, page: 1 })}
