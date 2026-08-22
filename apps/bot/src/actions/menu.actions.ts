@@ -48,6 +48,7 @@ async function buildOpenPoolGroups(db: Db, filterChampId?: string): Promise<Open
 
   const champMap = new Map<string, { champId: string; champName: string; matchMap: Map<string, { match: any; pools: OpenPoolEntry[] }> }>();
   const nowPlus5 = Date.now() + 5 * 60 * 1000;
+  const todayBR = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   for (const pool of pools ?? []) {
     const tierBrl = Number((pool as any).tier_brl);
@@ -59,7 +60,12 @@ async function buildOpenPoolGroups(db: Db, filterChampId?: string): Promise<Open
 
     const match = (pool as any).matches as any;
     if (!match) continue;
-    if (new Date(match.kickoff_at).getTime() <= nowPlus5) continue;
+
+    const kickoffMs = new Date(match.kickoff_at).getTime();
+    if (kickoffMs <= nowPlus5) continue;
+
+    const matchDateBR = new Date(kickoffMs - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    if (matchDateBR !== todayBR) continue;
 
     const champ = match.championships as any;
     const champId = champ?.id ?? 'outros';
