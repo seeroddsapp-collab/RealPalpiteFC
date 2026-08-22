@@ -19,14 +19,15 @@ const STATUS_CSS: Record<string, string> = {
   won:     'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   lost:    'bg-rose-500/10 text-rose-400 border-rose-500/20',
   void:    'bg-slate-500/10 text-slate-400 border-slate-500/20',
+  sold:    'bg-blue-500/10 text-blue-400 border-blue-500/20',
 }
 const STATUS_LABEL: Record<string, string> = {
-  pending: 'Pendente', won: 'Ganhou', lost: 'Perdeu', void: 'Nula',
+  pending: 'Pendente', won: 'Ganhou', lost: 'Perdeu', void: 'Nula', sold: 'Vendida',
 }
 
 type Bet = {
   id: string; bet_date: string; amount: number; odd: number
-  category: string; status: string; payout: number | null; notes: string | null
+  category: string; status: string; payout: number | null; sell_price: number | null; notes: string | null
 }
 
 type SearchParams = { status?: string }
@@ -50,6 +51,7 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
   const netProfit = allBets.reduce((acc, b) => {
     if (b.status === 'won') return acc + (b.payout ?? 0) - b.amount
     if (b.status === 'lost') return acc - b.amount
+    if (b.status === 'sold') return acc + (b.sell_price ?? 0) - b.amount
     return acc
   }, 0)
 
@@ -87,7 +89,7 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
 
       {/* Filtros */}
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {(['all', 'pending', 'won', 'lost', 'void'] as const).map(s => (
+        {(['all', 'pending', 'won', 'lost', 'sold', 'void'] as const).map(s => (
           <a key={s} href={url(s)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap border transition-colors ${
               filter === s
@@ -109,7 +111,9 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
           {filtered.map(b => {
             const profit = b.status === 'won'
               ? (b.payout ?? 0) - b.amount
-              : b.status === 'lost' ? -b.amount : null
+              : b.status === 'lost' ? -b.amount
+              : b.status === 'sold' ? (b.sell_price ?? 0) - b.amount
+              : null
 
             return (
               <div key={b.id} className={`bg-white dark:bg-navy-800 rounded-2xl border p-4 space-y-3 ${
@@ -144,6 +148,11 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
                     <div className="bg-stone-50 dark:bg-navy-900/50 rounded-xl p-2">
                       <p className="text-[10px] text-slate-500 uppercase">Retorno</p>
                       <p className="text-sm font-bold font-mono text-emerald-400 mt-0.5">{fmtArs(b.payout)}</p>
+                    </div>
+                  ) : b.status === 'sold' && b.sell_price != null ? (
+                    <div className="bg-stone-50 dark:bg-navy-900/50 rounded-xl p-2">
+                      <p className="text-[10px] text-slate-500 uppercase">Venda</p>
+                      <p className="text-sm font-bold font-mono text-blue-400 mt-0.5">{fmtArs(b.sell_price)}</p>
                     </div>
                   ) : (
                     <div className="bg-stone-50 dark:bg-navy-900/50 rounded-xl p-2">

@@ -30,6 +30,15 @@ export async function finalizeBet(id: string, status: 'won' | 'lost' | 'void', p
   revalidatePath('/dashboard/apostas/historico')
 }
 
+export async function sellBet(id: string, sellPrice: number) {
+  const db = createAdminClient()
+  const { error } = await db.from('personal_bets').update({ status: 'sold', sell_price: sellPrice }).eq('id', id)
+  if (error) throw error
+  revalidatePath('/dashboard/apostas')
+  revalidatePath('/dashboard/apostas/historico')
+  revalidatePath('/dashboard/apostas/banca')
+}
+
 export async function deleteBet(id: string) {
   const db = createAdminClient()
   await db.from('personal_bets').delete().eq('id', id)

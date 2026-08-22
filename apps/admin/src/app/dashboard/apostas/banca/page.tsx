@@ -26,7 +26,7 @@ export default async function BancaPage() {
   const db = createAdminClient()
   const [{ data: movs }, { data: bets }, { data: pendingBets }] = await Promise.all([
     db.from('personal_bankroll').select('*').order('created_at', { ascending: false }) as any,
-    db.from('personal_bets').select('status, amount, payout').neq('status', 'pending').neq('status', 'void') as any,
+    db.from('personal_bets').select('status, amount, payout, sell_price').neq('status', 'pending').neq('status', 'void') as any,
     db.from('personal_bets').select('amount').eq('status', 'pending') as any,
   ])
 
@@ -38,6 +38,7 @@ export default async function BancaPage() {
   const totalWit = movements.filter((m: Movement) => m.type === 'withdrawal').reduce((s: number, m: Movement) => s + m.amount, 0)
   const netProfit = settledBets.reduce((acc: number, b: any) => {
     if (b.status === 'won') return acc + (b.payout ?? 0) - b.amount
+    if (b.status === 'sold') return acc + (b.sell_price ?? 0) - b.amount
     return acc - b.amount
   }, 0)
   const saldo = totalDep - totalWit + netProfit - pendingLocked

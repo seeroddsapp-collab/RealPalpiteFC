@@ -1,6 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
-import { finalizeBet, deleteBet } from '@/actions/apostas'
+import { finalizeBet, deleteBet, sellBet } from '@/actions/apostas'
 
 type Props = {
   id: string
@@ -9,8 +9,9 @@ type Props = {
 }
 
 export function FinalizarBtn({ id, amount, odd }: Props) {
-  const [mode, setMode] = useState<'idle' | 'won' | 'confirm-lost' | 'confirm-void'>('idle')
+  const [mode, setMode] = useState<'idle' | 'won' | 'sell' | 'confirm-lost' | 'confirm-void'>('idle')
   const [payout, setPayout] = useState('')
+  const [sellPrice, setSellPrice] = useState('')
   const [isPending, startTransition] = useTransition()
 
   const expectedPayout = (amount * odd).toFixed(2)
@@ -38,10 +39,60 @@ export function FinalizarBtn({ id, amount, odd }: Props) {
     })
   }
 
+  function handleSell() {
+    const p = parseFloat(sellPrice)
+    if (isNaN(p) || p < 0) return
+    startTransition(async () => {
+      await sellBet(id, p)
+      setMode('idle')
+    })
+  }
+
   function handleDelete() {
     startTransition(async () => {
       await deleteBet(id)
     })
+  }
+
+  if (mode === 'sell') {
+    const diff = sellPrice ? parseFloat(sellPrice) - amount : null
+    return (
+      <div className="flex flex-col gap-2 w-full">
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder={`Valor recebido na venda (apostado: $${amount.toLocaleString('es-AR', { minimumFractionDigits: 2 })})`}
+            value={sellPrice}
+            onChange={e => setSellPrice(e.target.value)}
+            autoFocus
+            className="flex-1 min-w-0 bg-stone-50 dark:bg-navy-900 border border-blue-500/50 rounded-lg px-3 py-1.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+          />
+          <button
+            onClick={handleSell}
+            disabled={isPending || !sellPrice}
+            className="px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 disabled:opacity-40 text-white text-xs font-bold transition-colors whitespace-nowrap"
+          >
+            ✓ Confirmar
+          </button>
+          <button
+            onClick={() => { setMode('idle'); setSellPrice('') }}
+            className="px-2 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 text-xs"
+          >
+            ✕
+          </button>
+        </div>
+        {diff !== null && !isNaN(diff) && (
+          <p className="text-xs text-slate-500">
+            {diff >= 0
+              ? <>Lucro na venda: <span className="text-emerald-400 font-semibold">+${diff.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></>
+              : <>Perda na venda: <span className="text-rose-400 font-semibold">-${Math.abs(diff).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></>
+            }
+          </p>
+        )}
+      </div>
+    )
   }
 
   if (mode === 'won') {
@@ -114,6 +165,12 @@ export function FinalizarBtn({ id, amount, odd }: Props) {
         className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold border border-rose-500/20 transition-colors"
       >
         ✕ Perdeu
+      </button>
+      <button
+        onClick={() => setMode('sell')}
+        className="px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-xs font-semibold border border-blue-500/20 transition-colors"
+      >
+        💰 Vender
       </button>
       <button
         onClick={() => setMode('confirm-void')}

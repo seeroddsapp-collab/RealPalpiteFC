@@ -12,7 +12,7 @@ type SearchParams = { status?: string; period?: string; page?: string }
 
 type Bet = {
   id: string; bet_date: string; amount: number; odd: number
-  category: string; status: string; payout: number | null; notes: string | null
+  category: string; status: string; payout: number | null; sell_price: number | null; notes: string | null
 }
 type Movement = { id: string; type: string; amount: number; created_at: string; notes: string | null }
 
@@ -63,18 +63,20 @@ function ProfitChart({ points }: { points: Array<{ cumulative: number }> }) {
   )
 }
 
-const STATUS_LABEL: Record<string, string> = { pending: 'Pendente', won: 'Ganhou', lost: 'Perdeu', void: 'Nula' }
+const STATUS_LABEL: Record<string, string> = { pending: 'Pendente', won: 'Ganhou', lost: 'Perdeu', void: 'Nula', sold: 'Vendida' }
 const STATUS_CSS: Record<string, string> = {
   pending: 'border-amber-500/20',
   won:     'border-emerald-500/20',
   lost:    'border-rose-500/20',
   void:    'border-stone-200 dark:border-navy-700',
+  sold:    'border-blue-500/20',
 }
 const STATUS_BADGE: Record<string, string> = {
   pending: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   won:     'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   lost:    'bg-rose-500/10 text-rose-400 border-rose-500/20',
   void:    'bg-slate-500/10 text-slate-400 border-slate-500/20',
+  sold:    'bg-blue-500/10 text-blue-400 border-blue-500/20',
 }
 
 function todayBrazil() {
@@ -116,12 +118,14 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
   const won  = settled.filter(b => b.status === 'won')
   const lost = settled.filter(b => b.status === 'lost')
 
+  const sold = settled.filter(b => b.status === 'sold')
   const netProfit = settled.reduce((acc, b) => {
     if (b.status === 'won') return acc + (b.payout ?? 0) - b.amount
     if (b.status === 'lost') return acc - b.amount
+    if (b.status === 'sold') return acc + (b.sell_price ?? 0) - b.amount
     return acc
   }, 0)
-  const totalWagered = [...won, ...lost].reduce((s, b) => s + b.amount, 0)
+  const totalWagered = [...won, ...lost, ...sold].reduce((s, b) => s + b.amount, 0)
   const roi = totalWagered > 0 ? (netProfit / totalWagered) * 100 : 0
   const winRate = won.length + lost.length > 0 ? (won.length / (won.length + lost.length)) * 100 : 0
 
@@ -131,6 +135,7 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
   const allTimeProfit = allBets.filter(b => b.status !== 'pending').reduce((acc, b) => {
     if (b.status === 'won') return acc + (b.payout ?? 0) - b.amount
     if (b.status === 'lost') return acc - b.amount
+    if (b.status === 'sold') return acc + (b.sell_price ?? 0) - b.amount
     return acc
   }, 0)
   const pendingLocked = allBets.filter(b => b.status === 'pending').reduce((s, b) => s + b.amount, 0)
@@ -159,6 +164,7 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
     const s = catMap.get(b.category) ?? { total: 0, won: 0, profit: 0 }
     s.total++
     if (b.status === 'won') { s.won++; s.profit += (b.payout ?? 0) - b.amount }
+    else if (b.status === 'sold') { s.profit += (b.sell_price ?? 0) - b.amount }
     else s.profit -= b.amount
     catMap.set(b.category, s)
   }
@@ -258,7 +264,7 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
 
         {/* Filtro de status */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-          {(['all', 'pending', 'won', 'lost', 'void'] as const).map(s => {
+          {(['all', 'pending', 'won', 'lost', 'sold', 'void'] as const).map(s => {
             const count = s === 'all' ? periodBets.length : periodBets.filter(b => b.status === s).length
             const active = statusFilter === s
             return (
@@ -310,7 +316,9 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
             {paginated.map(b => {
               const profit = b.status === 'won'
                 ? (b.payout ?? 0) - b.amount
-                : b.status === 'lost' ? -b.amount : null
+                : b.status === 'lost' ? -b.amount
+                : b.status === 'sold' ? (b.sell_price ?? 0) - b.amount
+                : null
 
               return (
                 <div key={b.id} className={`bg-white dark:bg-navy-800 rounded-2xl border p-4 space-y-3 ${STATUS_CSS[b.status] ?? 'border-stone-200 dark:border-navy-700'}`}>
@@ -338,10 +346,14 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
                     </div>
                     <div className="bg-stone-50 dark:bg-navy-900/50 rounded-xl p-2">
                       <p className="text-[10px] text-slate-500 uppercase tracking-wide">
-                        {b.status === 'won' ? 'Retorno' : 'Pot.'}
+                        {b.status === 'won' ? 'Retorno' : b.status === 'sold' ? 'Venda' : 'Pot.'}
                       </p>
-                      <p className={`text-sm font-bold font-mono mt-0.5 ${b.status === 'won' ? 'text-emerald-400' : 'text-slate-400'}`}>
-                        {fmtArs(b.status === 'won' && b.payout ? b.payout : b.amount * b.odd)}
+                      <p className={`text-sm font-bold font-mono mt-0.5 ${b.status === 'won' ? 'text-emerald-400' : b.status === 'sold' ? 'text-blue-400' : 'text-slate-400'}`}>
+                        {b.status === 'won' && b.payout
+                          ? fmtArs(b.payout)
+                          : b.status === 'sold' && b.sell_price != null
+                          ? fmtArs(b.sell_price)
+                          : fmtArs(b.amount * b.odd)}
                       </p>
                     </div>
                     {profit !== null && (
