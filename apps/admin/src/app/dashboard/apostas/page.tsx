@@ -25,14 +25,15 @@ function fmtDate(d: string) {
   return new Date(d + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
 }
 
-function KpiCard({ label, value, sub, color = 'text-slate-200', border = '' }: {
-  label: string; value: string; sub?: string; color?: string; border?: string
+function KpiCard({ label, value, sub, sub2, sub2Color, color = 'text-slate-200', border = '' }: {
+  label: string; value: string; sub?: string; sub2?: string; sub2Color?: string; color?: string; border?: string
 }) {
   return (
     <div className={`bg-white dark:bg-navy-800 rounded-2xl p-4 border ${border || 'border-stone-200 dark:border-navy-700'}`}>
       <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</p>
       <p className={`text-2xl font-bold font-mono mt-1 ${color}`}>{value}</p>
       {sub && <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{sub}</p>}
+      {sub2 && <p className={`text-xs font-semibold mt-0.5 ${sub2Color ?? 'text-slate-400 dark:text-slate-500'}`}>{sub2}</p>}
     </div>
   )
 }
@@ -231,7 +232,13 @@ export default async function ApostasPage({ searchParams }: { searchParams: Prom
         <KpiCard
           label="Saldo na Banca"
           value={fmtArs(saldoBanca)}
-          sub={totalDep > 0 ? `${bancaROI >= 0 ? '+' : ''}${bancaROI.toFixed(1)}% sobre dep. ${fmtArs(totalDep)}` : `dep ${fmtArs(totalDep)} · ret ${fmtArs(totalWit)}`}
+          sub={totalDep > 0 ? `Capital: ${fmtArs(totalDep)} depositado` : undefined}
+          sub2={totalDep > 0
+            ? allTimeProfit >= 0
+              ? `House money: +${fmtArs(allTimeProfit)} (+${bancaROI.toFixed(1)}%)`
+              : `Perdendo capital: ${fmtArs(allTimeProfit)} (${bancaROI.toFixed(1)}%)`
+            : undefined}
+          sub2Color={allTimeProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}
           color={saldoBanca >= 0 ? 'text-slate-200' : 'text-rose-400'}
         />
         <KpiCard
