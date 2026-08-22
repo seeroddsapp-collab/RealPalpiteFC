@@ -219,7 +219,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
   const receita         = arrecadacao - premios - devolucoes
   const custodia        = (userBalances ?? []).reduce((s, u) => s + (u.virtual_balance ?? 0), 0)
   const net             = totalDeposited - totalWithdrawn
-  // Quanto a plataforma pode sacar com segurança: saldo estimado no MP menos o que pertence aos usuários
+  // Quanto a plataforma pode sacar com segurança: saldo estimado no Asaas menos o que pertence aos usuários
   const disponivel      = net - custodia
 
   const chartData = buildDailyData(recentDeps ?? [], recentWits ?? [], 30)
@@ -277,7 +277,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
             {fmtBrl(disponivel)}
           </p>
           <p className="text-xs text-slate-500 mt-2">
-            Saldo estimado no Mercado Pago menos o que pertence aos usuários (custódia).
+            Saldo estimado no Asaas menos o que pertence aos usuários (custódia).
             Apenas esse valor é seguro sacar para sua conta.
           </p>
         </div>
@@ -291,7 +291,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
             <span className="text-rose-400">−{fmtBrl(totalWithdrawn)}</span>
           </div>
           <div className="border-t border-slate-700 pt-1.5 flex items-center justify-between gap-4">
-            <span className="text-slate-400">Saldo MP estimado</span>
+            <span className="text-slate-400">Saldo Asaas estimado</span>
             <span className="text-slate-200">{fmtBrl(net)}</span>
           </div>
           <div className="flex items-center justify-between gap-4">
